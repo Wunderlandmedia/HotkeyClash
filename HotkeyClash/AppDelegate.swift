@@ -39,6 +39,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil
         )
 
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleDismissPanel),
+            name: .dismissPanel,
+            object: nil
+        )
+
         // Scan on launch if enabled and AX permission is granted
         if settings.scanOnLaunch && AccessibilityService.checkPermission() {
             startScan(rescan: false)
@@ -73,6 +80,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func handleRescan() {
         startScan(rescan: true)
+    }
+
+    @objc private func handleDismissPanel() {
+        statusBar.hidePopover()
     }
 
     /// Runs a scan, superseding any in-flight one, then refreshes the menu bar badge.

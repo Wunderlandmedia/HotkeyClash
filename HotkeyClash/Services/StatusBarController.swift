@@ -157,6 +157,7 @@ final class StatusBarController {
 extension Notification.Name {
     static let openSettings = Notification.Name("openSettings")
     static let triggerRescan = Notification.Name("triggerRescan")
+    static let dismissPanel = Notification.Name("dismissPanel")
 }
 
 final class FloatingPanel: NSPanel {
