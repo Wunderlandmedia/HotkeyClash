@@ -1,0 +1,117 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  SCHEME: HotkeyClash
+  APP_NAME: HotkeyClash
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.app/Contents/Developer
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Archive
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          xcodebuild archive \
+            -project "$APP_NAME.xcodeproj" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -archivePath "build/$APP_NAME.xcarchive" \
+            -quiet \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="-" \
+            MARKETING_VERSION="$VERSION"
+
+      - name: Export app
+        run: |
+          mkdir -p build/export
+          cp -R "build/$APP_NAME.xcarchive/Products/Applications/$APP_NAME.app" build/export/
+
+      - name: Create DMG
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          DMG_DIR=build/dmg
+          OUTPUT_DIR=build/release
+          mkdir -p "$DMG_DIR" "$OUTPUT_DIR"
+
+          cp -R "build/export/$APP_NAME.app" "$DMG_DIR/"
+          ln -s /Applications "$DMG_DIR/Applications"
+
+          if [[ -f scripts/dmg-background.png ]]; then
+            mkdir -p "$DMG_DIR/.background"
+            cp scripts/dmg-background.png "$DMG_DIR/.background/background.png"
+          fi
+
+          TMP_DMG="build/$APP_NAME-tmp.dmg"
+          hdiutil create -volname "$APP_NAME" -srcfolder "$DMG_DIR" -ov -format UDRW "$TMP_DMG"
+
+          DEVICE=$(hdiutil attach -readwrite -noverify "$TMP_DMG" | grep '/Volumes/' | awk '{print $1}')
+
+          osascript <<APPLESCRIPT
+          tell application "Finder"
+              tell disk "$APP_NAME"
+                  open
+                  set current view of container window to icon view
+                  set toolbar visible of container window to false
+                  set statusbar visible of container window to false
+                  set bounds of container window to {100, 100, 640, 440}
+                  set theViewOptions to the icon view options of container window
+                  set arrangement of theViewOptions to not arranged
+                  set icon size of theViewOptions to 80
+                  set position of item "$APP_NAME.app" of container window to {140, 180}
+                  set position of item "Applications" of container window to {400, 180}
+                  close
+                  open
+                  update without registering applications
+                  delay 2
+                  close
+              end tell
+          end tell
+          APPLESCRIPT
+
+          sync
+          hdiutil detach "$DEVICE" -quiet
+          hdiutil convert "$TMP_DMG" -format UDZO -imagekey zlib-level=9 -o "$OUTPUT_DIR/$APP_NAME-$VERSION.dmg"
+          rm -f "$TMP_DMG"
+
+      - name: Create ZIP
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          cd build/export
+          ditto -c -k --keepParent "$APP_NAME.app" "../release/$APP_NAME-$VERSION.zip"
+
+      - name: Generate checksums
+        run: |
+          cd build/release
+          shasum -a 256 *.dmg *.zip > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          generate_release_notes: true
+          files: |
+            build/release/*.dmg
+            build/release/*.zip
+            build/release/SHA256SUMS.txt

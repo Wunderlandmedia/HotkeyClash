@@ -1,0 +1,33 @@
+# Claude Code
+.claude/
+CLAUDE.md
+
+.env.local
+
+# Docs
+docs/
+
+# Xcode
+build/
+DerivedData/
+*.xcuserdata
+*.xcworkspace/xcuserdata/
+xcuserdata/
+
+# Node
+node_modules/
+package.json
+package-lock.json
+
+# Scripts / generated
+logo_exploration/
+logos/
+icon-explorations/
+*.py
+*.mjs
+generate_*
+
+# macOS
+.DS_Store
+*.swp
+*~
