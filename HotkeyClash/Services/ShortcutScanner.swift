@@ -58,6 +58,14 @@ final class ShortcutScanner {
     }
 
     private func runScan() async {
+        // App menu shortcuts are the primary source and require Accessibility.
+        // Without it the menu bar scan silently returns nothing, so refuse to run
+        // a misleading partial scan and surface the permission gap instead.
+        guard AccessibilityService.checkPermission() else {
+            state = .error("Accessibility permission is required to scan app menu shortcuts. Grant it in System Settings, then scan again.")
+            return
+        }
+
         state = .scanning(progress: "Scanning system shortcuts...")
         let start = Date()
 

@@ -235,12 +235,18 @@ private struct ErrorView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
             if message.lowercased().contains("accessibility") {
-                Button("Open System Settings") {
-                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-                        NSWorkspace.shared.open(url)
+                HStack(spacing: 12) {
+                    Button("Open System Settings") {
+                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                            NSWorkspace.shared.open(url)
+                        }
                     }
+                    .buttonStyle(.borderedProminent)
+                    // After granting permission in System Settings, let the user
+                    // re-run the scan without reopening the panel.
+                    Button("Scan", action: onRetry)
+                        .buttonStyle(.bordered)
                 }
-                .buttonStyle(.borderedProminent)
             } else {
                 Button("Retry", action: onRetry)
                     .buttonStyle(.bordered)
