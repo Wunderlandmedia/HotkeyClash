@@ -133,11 +133,6 @@ if [[ -n "$NOTES_FILE" ]]; then
     notes_args=(--notes-file "$NOTES_FILE")
 fi
 
-draft_args=()
-if $DRAFT; then
-    draft_args=(--draft)
-fi
-
 # --- Create or update the release ---
 
 if gh release view "$TAG" >/dev/null 2>&1; then
@@ -145,10 +140,14 @@ if gh release view "$TAG" >/dev/null 2>&1; then
     gh release upload "$TAG" "$DMG" "$ZIP" "$SUMS" --clobber
 else
     log "Creating release $TAG"
-    gh release create "$TAG" "$DMG" "$ZIP" "$SUMS" \
-        --title "$APP_NAME $VERSION" \
-        "${notes_args[@]}" \
-        "${draft_args[@]}"
+    # Build the arg list incrementally. macOS ships bash 3.2, where expanding an
+    # empty array under `set -u` ("${arr[@]}") fails, so --draft is appended
+    # conditionally rather than via a possibly-empty array.
+    create_args=("$TAG" "$DMG" "$ZIP" "$SUMS" --title "$APP_NAME $VERSION" "${notes_args[@]}")
+    if $DRAFT; then
+        create_args+=(--draft)
+    fi
+    gh release create "${create_args[@]}"
 fi
 
 url="$(gh release view "$TAG" --json url -q .url 2>/dev/null || true)"
