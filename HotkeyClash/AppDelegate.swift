@@ -5,13 +5,62 @@ import os
 private let logger = Logger(subsystem: "com.hotkeyclash.app", category: "AppDelegate")
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var statusBar: StatusBarController!
     private var settingsWindow: NSWindow?
+    private var onboardingWindow: NSWindow?
     private let scanner = ShortcutScanner()
     private var scanTask: Task<Void, Never>?
+    private var didCompleteSetup = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if !SettingsManager.shared.hasCompletedOnboarding {
+            showOnboarding()
+            return
+        }
+
+        completeAppSetup()
+    }
+
+    // MARK: - Onboarding
+
+    private func showOnboarding() {
+        NSApp.activate()
+
+        let onboardingView = OnboardingView { [weak self] in
+            SettingsManager.shared.hasCompletedOnboarding = true
+            self?.onboardingWindow?.close()
+            self?.onboardingWindow = nil
+            self?.completeAppSetup()
+        }
+
+        let controller = NSHostingController(rootView: onboardingView)
+        let window = NSWindow(contentViewController: controller)
+        window.styleMask = [.titled, .closable]
+        window.title = "Welcome to HotkeyClash"
+        window.isReleasedWhenClosed = false
+        window.delegate = self
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        onboardingWindow = window
+    }
+
+    // Closing the onboarding window early (red button) is treated as finishing it,
+    // so the app still installs its menu bar item instead of running headless.
+    func windowWillClose(_ notification: Notification) {
+        guard notification.object as? NSWindow == onboardingWindow else { return }
+        guard !SettingsManager.shared.hasCompletedOnboarding else { return }
+        SettingsManager.shared.hasCompletedOnboarding = true
+        onboardingWindow = nil
+        completeAppSetup()
+    }
+
+    // MARK: - App Setup
+
+    private func completeAppSetup() {
+        guard !didCompleteSetup else { return }
+        didCompleteSetup = true
+
         statusBar = StatusBarController()
 
         let contentView = ConflictListView(scanner: scanner)
