@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  SCHEME: HotkeyClash
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.app/Contents/Developer
+
+      - name: Build
+        run: |
+          xcodebuild build \
+            -project HotkeyClash.xcodeproj \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -quiet \
+            CODE_SIGNING_ALLOWED=NO
