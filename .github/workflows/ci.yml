@@ -15,8 +15,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.app/Contents/Developer
+      # The app uses Swift 6.2 features (nonisolated on types,
+      # SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor), so pick the newest installed
+      # Xcode rather than the image default, which can lag behind.
+      - name: Select newest Xcode
+        run: |
+          XCODE="$(ls -d /Applications/Xcode_*.app | grep -vi beta | sort -V | tail -1)"
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+          swift --version
 
       - name: Build
         run: |
