@@ -52,6 +52,20 @@ The app runs as a menu bar item (LSUIElement, no Dock icon). To scan running app
 must grant Accessibility permission in System Settings > Privacy & Security >
 Accessibility. Config file and system shortcut scanning work without it.
 
+## Running tests
+
+Unit tests live in `HotkeyClashTests/` and cover the pure logic: conflict
+classification (real conflict vs app overlap), conflict detection and ranking, and the
+Accessibility keycode/modifier mapping. Run them from Xcode with Cmd+U, or:
+
+```bash
+xcodebuild test -scheme HotkeyClash -destination 'platform=macOS'
+```
+
+CI runs the same command on every push and pull request. The tests are a host-based
+target (they `@testable import HotkeyClash`), so the app builds and launches to host
+them; no Accessibility permission or network access is required.
+
 ## How scanning works
 
 A scan is orchestrated by `ShortcutScanner` (`Services/ShortcutScanner.swift`), which

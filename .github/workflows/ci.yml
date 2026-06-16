@@ -9,7 +9,7 @@ env:
   SCHEME: HotkeyClash
 
 jobs:
-  build:
+  test:
     runs-on: macos-15
     steps:
       - name: Checkout
@@ -26,11 +26,15 @@ jobs:
           xcodebuild -version
           swift --version
 
-      - name: Build
+      # `xcodebuild test` builds the app and the HotkeyClashTests target, then runs
+      # the unit tests (Conflict classification, conflict detection, AX mapping). It
+      # builds too, so this single step covers the old build check as well.
+      - name: Build & Test
         run: |
-          xcodebuild build \
+          xcodebuild test \
             -project HotkeyClash.xcodeproj \
             -scheme "$SCHEME" \
             -configuration Debug \
+            -destination 'platform=macOS' \
             -quiet \
             CODE_SIGNING_ALLOWED=NO
