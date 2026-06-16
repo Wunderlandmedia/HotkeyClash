@@ -3,12 +3,14 @@ import SwiftUI
 struct SettingsView: View {
     var body: some View {
         TabView {
-            Tab("General", systemImage: "gear") {
-                GeneralSettingsTab()
-            }
-            Tab("About", systemImage: "info.circle") {
-                AboutSettingsTab()
-            }
+            GeneralSettingsTab()
+                .tabItem {
+                    Label("General", systemImage: "gear")
+                }
+            AboutSettingsTab()
+                .tabItem {
+                    Label("About", systemImage: "info.circle")
+                }
         }
         .frame(width: 460, height: 420)
         .fixedSize()
