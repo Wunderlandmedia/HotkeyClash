@@ -28,6 +28,33 @@ struct Conflict: Identifiable, Equatable {
         return globalCount >= 2 ? .definite : .potential
     }
 
+    /// Whether a conflict is an always-on clash or merely a focus-dependent overlap.
+    enum ClashCategory {
+        /// Involves at least one always-listening global hotkey (config file or
+        /// system shortcut). It clashes regardless of which app is focused: two
+        /// globals collide, or a global shadows an app's menu item so it never fires.
+        case realConflict
+        /// Only app menu shortcuts overlap (no global source). Each fires only when
+        /// its own app is frontmost, so these do not actually clash in use. This is
+        /// where the universal Copy/Paste/Quit boilerplate lands.
+        case appOverlap
+    }
+
+    /// Classifies the conflict by whether any always-on global hotkey is involved.
+    /// This is the source-based distinction that decides real clashes from menu noise,
+    /// independent of how many apps happen to share the combo.
+    var category: ClashCategory {
+        let globalSources: Set<HotkeyBinding.BindingSource> = [.configFile, .systemShortcut]
+        return bindings.contains { globalSources.contains($0.source) } ? .realConflict : .appOverlap
+    }
+
+    /// Number of distinct apps claiming this combo, keyed by bundle ID (falling back
+    /// to name). Used to rank app overlaps: few-app overlaps are distinctive and rank
+    /// high; universal boilerplate (Cmd+C across everything) sinks to the bottom.
+    var appCount: Int {
+        Set(bindings.map { $0.ownerBundleID ?? $0.ownerName }).count
+    }
+
     /// Human-readable display string for the key combo (e.g. "\u{2318}\u{21E7}G").
     var displayString: String {
         ShortcutFormatter.displayString(

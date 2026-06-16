@@ -5,8 +5,12 @@ struct ConflictListView: View {
 
     @State private var selectedID: Conflict.ID?
 
+    private var rankedConflicts: [Conflict] {
+        scanner.rankedConflicts
+    }
+
     private var selectedConflict: Conflict? {
-        scanner.conflicts.first { $0.id == selectedID }
+        rankedConflicts.first { $0.id == selectedID }
     }
 
     var body: some View {
@@ -32,11 +36,11 @@ struct ConflictListView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color("BrandBackground"))
-        .onChange(of: scanner.conflicts) {
-            // Conflicts arrive pre-sorted from the detector (definite first, then
-            // most clashes first). Keep the selection valid as results change.
-            if selectedID == nil || !scanner.conflicts.contains(where: { $0.id == selectedID }) {
-                selectedID = scanner.conflicts.first?.id
+        .onChange(of: rankedConflicts) {
+            // Real conflicts pin to the top, app overlaps follow. Keep the selection
+            // valid as results change.
+            if selectedID == nil || !rankedConflicts.contains(where: { $0.id == selectedID }) {
+                selectedID = rankedConflicts.first?.id
             }
         }
     }
@@ -44,8 +48,8 @@ struct ConflictListView: View {
     private var splitResultsView: some View {
         VStack(spacing: 0) {
             ResultsHeader(
-                conflictCount: scanner.conflictCount,
-                definiteCount: scanner.definiteConflictCount,
+                realConflictCount: scanner.realConflictCount,
+                appOverlapCount: scanner.appOverlapCount,
                 bindingCount: scanner.allBindings.count,
                 scanDuration: scanner.scanDuration,
                 onRescan: {
@@ -57,7 +61,7 @@ struct ConflictListView: View {
             HStack(spacing: 0) {
                 // A List with a selection binding gives keyboard navigation, type
                 // select, and VoiceOver list semantics for free.
-                List(scanner.conflicts, selection: $selectedID) { conflict in
+                List(rankedConflicts, selection: $selectedID) { conflict in
                     ConflictRow(conflict: conflict)
                         .tag(conflict.id)
                         .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 8))
@@ -105,23 +109,20 @@ private struct ConflictDetailPane: View {
 // MARK: - Header
 
 private struct ResultsHeader: View {
-    let conflictCount: Int
-    let definiteCount: Int
+    let realConflictCount: Int
+    let appOverlapCount: Int
     let bindingCount: Int
     let scanDuration: TimeInterval
     let onRescan: () -> Void
 
     var body: some View {
-        HStack {
+        HStack(spacing: 8) {
+            Image(systemName: realConflictCount > 0 ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                .foregroundStyle(realConflictCount > 0 ? .orange : .green)
             VStack(alignment: .leading, spacing: 2) {
-                if definiteCount > 0 {
-                    Text("\(conflictCount) conflicts (\(definiteCount) definite)")
-                        .font(.subheadline.weight(.semibold))
-                } else {
-                    Text("\(conflictCount) potential conflicts")
-                        .font(.subheadline.weight(.semibold))
-                }
-                Text("Scanned \(bindingCount) shortcuts in \(String(format: "%.1f", scanDuration))s")
+                Text(headline)
+                    .font(.subheadline.weight(.semibold))
+                Text(subhead)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -132,6 +133,17 @@ private struct ResultsHeader: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
+    }
+
+    private var headline: String {
+        guard realConflictCount > 0 else { return "No always-on conflicts" }
+        let noun = realConflictCount == 1 ? "real conflict" : "real conflicts"
+        return "\(realConflictCount) \(noun)"
+    }
+
+    private var subhead: String {
+        let overlaps = appOverlapCount == 1 ? "1 menu overlap" : "\(appOverlapCount) menu overlaps"
+        return "\(overlaps), only clash when an app is focused \u{00B7} scanned \(bindingCount) shortcuts in \(String(format: "%.1f", scanDuration))s"
     }
 }
 

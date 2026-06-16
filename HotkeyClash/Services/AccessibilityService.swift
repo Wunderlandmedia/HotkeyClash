@@ -33,6 +33,23 @@ nonisolated enum AccessibilityService {
         return (menuBar as! AXUIElement)
     }
 
+    /// Returns the *extras* menu bar AXUIElement for the app with the given PID:
+    /// the menu attached to the app's status-bar icon. This is where menu-bar-only
+    /// (accessory / LSUIElement) apps expose their shortcuts, since they have no
+    /// conventional main menu bar. Returns nil if the app has no status item or the
+    /// AX query fails.
+    ///
+    /// Caveat: status menus are frequently built lazily in `menuNeedsUpdate:`, so
+    /// items (and their shortcuts) may only be present while the menu is open.
+    static func getExtrasMenuBar(for pid: pid_t) -> AXUIElement? {
+        let app = AXUIElementCreateApplication(pid)
+        var menuBar: CFTypeRef?
+        let result = AXUIElementCopyAttributeValue(app, kAXExtrasMenuBarAttribute as CFString, &menuBar)
+        guard result == .success, let menuBar,
+              CFGetTypeID(menuBar) == AXUIElementGetTypeID() else { return nil }
+        return (menuBar as! AXUIElement)
+    }
+
     /// Returns the children of an AX element, or an empty array if the query fails.
     static func getChildren(of element: AXUIElement) -> [AXUIElement] {
         var children: CFTypeRef?
@@ -113,7 +130,17 @@ nonisolated enum AccessibilityService {
             "]": 0x1E, "o": 0x1F, "u": 0x20, "[": 0x21, "i": 0x22, "p": 0x23,
             "l": 0x25, "j": 0x26, "'": 0x27, "k": 0x28, ";": 0x29,
             "\\": 0x2A, ",": 0x2B, "/": 0x2C, "n": 0x2D, "m": 0x2E, ".": 0x2F,
+            "`": 0x32, " ": 0x31,
         ]
+        // Some special keys (return, tab, escape, delete) arrive as literal control
+        // characters in AXMenuItemCmdChar rather than via the glyph attribute.
+        let specialChars: [Character: UInt16] = [
+            "\r": 0x24, "\n": 0x24, "\t": 0x30, "\u{1B}": 0x35,
+            "\u{08}": 0x33, "\u{7F}": 0x33, "\u{03}": 0x4C,
+        ]
+        if let scalar = character.first, let code = specialChars[scalar] {
+            return code
+        }
         return charToKeyCode[character.lowercased()]
     }
 }

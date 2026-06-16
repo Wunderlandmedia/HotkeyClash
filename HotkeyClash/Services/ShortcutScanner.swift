@@ -36,8 +36,32 @@ final class ShortcutScanner {
     private let configFileScanner = ConfigFileScanner()
     private let systemShortcutScanner = SystemShortcutScanner()
 
-    var conflictCount: Int { conflicts.count }
-    var definiteConflictCount: Int { conflicts.filter { $0.severity == .definite }.count }
+    /// Number of always-on clashes (involve a global hotkey). The actionable count,
+    /// used for the summary verdict and the menu bar badge.
+    var realConflictCount: Int { conflicts.lazy.filter { $0.category == .realConflict }.count }
+
+    /// Number of focus-dependent app menu overlaps (no global source involved).
+    var appOverlapCount: Int { conflicts.count - realConflictCount }
+
+    /// The single display list. Real conflicts pin to the top (definite first, then
+    /// most clashes); app overlaps follow, ranked by how distinctive they are: a combo
+    /// shared by few apps is interesting and ranks high, while universal boilerplate
+    /// (Cmd+C across everything) sinks to the bottom.
+    var rankedConflicts: [Conflict] {
+        conflicts.sorted { lhs, rhs in
+            if lhs.category != rhs.category {
+                return lhs.category == .realConflict
+            }
+            switch lhs.category {
+            case .realConflict:
+                if lhs.severity != rhs.severity { return lhs.severity > rhs.severity }
+                return lhs.bindings.count > rhs.bindings.count
+            case .appOverlap:
+                if lhs.appCount != rhs.appCount { return lhs.appCount < rhs.appCount }
+                return lhs.displayString < rhs.displayString
+            }
+        }
+    }
 
     private var isScanning = false
 
@@ -58,30 +82,50 @@ final class ShortcutScanner {
     }
 
     private func runScan() async {
-        // App menu shortcuts are the primary source and require Accessibility.
-        // Without it the menu bar scan silently returns nothing, so refuse to run
-        // a misleading partial scan and surface the permission gap instead.
-        guard AccessibilityService.checkPermission() else {
-            state = .error("Accessibility permission is required to scan app menu shortcuts. Grant it in System Settings, then scan again.")
+        let settings = SettingsManager.shared
+        let scanRunningApps = settings.scanRunningApps
+        let scanConfigFiles = settings.scanConfigFiles
+        let scanSystemShortcuts = settings.scanSystemShortcuts
+        let includeBackgroundApps = settings.includeBackgroundApps
+
+        guard scanRunningApps || scanConfigFiles || scanSystemShortcuts else {
+            state = .error("All scan sources are turned off. Enable at least one in Settings, then scan again.")
             return
         }
 
-        state = .scanning(progress: "Scanning system shortcuts...")
+        // App menu shortcuts require Accessibility. Without it the menu bar scan
+        // silently returns nothing, so refuse to run a misleading partial scan and
+        // surface the permission gap instead. Only gate on it when that source is on.
+        if scanRunningApps {
+            guard AccessibilityService.checkPermission() else {
+                state = .error("Accessibility permission is required to scan app menu shortcuts. Grant it in System Settings, then scan again.")
+                return
+            }
+        }
+
         let start = Date()
+        var bindings: [HotkeyBinding] = []
 
         // 1. System shortcuts (fast, no AX needed)
-        let systemBindings = systemShortcutScanner.scan()
+        if scanSystemShortcuts {
+            state = .scanning(progress: "Scanning system shortcuts...")
+            bindings += systemShortcutScanner.scan()
+        }
 
         // 2. Config files (fast, no AX needed)
-        state = .scanning(progress: "Reading config files...")
-        let configBindings = configFileScanner.scan()
+        if scanConfigFiles {
+            state = .scanning(progress: "Reading config files...")
+            bindings += configFileScanner.scan()
+        }
 
         // 3. Menu bar shortcuts (needs AX, runs off the main actor)
-        state = .scanning(progress: "Scanning running apps...")
-        let menuBindings = await menuBarScanner.scan()
+        if scanRunningApps {
+            state = .scanning(progress: "Scanning running apps...")
+            bindings += await menuBarScanner.scan(includeBackgroundApps: includeBackgroundApps)
+        }
 
         // 4. Combine and detect conflicts
-        allBindings = systemBindings + configBindings + menuBindings
+        allBindings = bindings
         conflicts = ConflictDetector.detect(bindings: allBindings)
         scanDuration = Date().timeIntervalSince(start)
 

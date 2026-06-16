@@ -146,7 +146,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 await scanner.scan()
             }
             guard !Task.isCancelled else { return }
-            statusBar.updateBadge(count: scanner.conflictCount)
+            // The badge counts always-on clashes; focus-dependent menu overlaps are
+            // not real conflicts and would only inflate the number with noise.
+            statusBar.updateBadge(count: scanner.realConflictCount)
         }
     }
 }

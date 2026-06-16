@@ -29,6 +29,53 @@ struct GeneralSettingsTab: View {
                     }
                 }
 
+                SettingsCard(title: "Scanning") {
+                    SettingsRow {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Running apps")
+                            Text("Menu bar shortcuts of open apps (needs Accessibility)")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Toggle("Running apps", isOn: Bindable(settings).scanRunningApps)
+                            .toggleStyle(.switch)
+                            .labelsHidden()
+                    }
+                    SettingsRow {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Include background apps")
+                            Text("Menu bar only apps with no Dock icon, such as Ollama")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Toggle("Include background apps", isOn: Bindable(settings).includeBackgroundApps)
+                            .toggleStyle(.switch)
+                            .labelsHidden()
+                            .disabled(!settings.scanRunningApps)
+                    }
+                    SettingsRow {
+                        Text("System shortcuts")
+                        Spacer()
+                        Toggle("System shortcuts", isOn: Bindable(settings).scanSystemShortcuts)
+                            .toggleStyle(.switch)
+                            .labelsHidden()
+                    }
+                    SettingsRow(showDivider: false) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Config files")
+                            Text("Karabiner-Elements and skhd")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Toggle("Config files", isOn: Bindable(settings).scanConfigFiles)
+                            .toggleStyle(.switch)
+                            .labelsHidden()
+                    }
+                }
+
                 SettingsCard(title: "Accessibility") {
                     if hasAccessibility {
                         SettingsRow(showDivider: false) {
