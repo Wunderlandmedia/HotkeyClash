@@ -30,11 +30,13 @@ Open-source macOS menu bar utility that scans running apps, config files, and sy
 
 ## Install
 
-### Homebrew (coming soon)
+### Homebrew
 
 ```bash
-brew install --cask hotkeyclash
+brew install --cask wunderlandmedia/tap/hotkeyclash
 ```
+
+To update later: `brew upgrade --cask hotkeyclash`.
 
 ### Download
 

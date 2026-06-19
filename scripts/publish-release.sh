@@ -150,6 +150,50 @@ else
     gh release create "${create_args[@]}"
 fi
 
+# --- Update Homebrew tap cask ---
+#
+# Bumps version + sha256 in Wunderlandmedia/homebrew-tap so
+# `brew upgrade --cask hotkeyclash` picks up the new release. Best-effort:
+# a tap failure warns but does not fail the release. Only runs once the
+# release is actually published (a draft DMG is not downloadable yet).
+
+update_tap() {
+    local tap_repo="Wunderlandmedia/homebrew-tap"
+    local cask_path="Casks/hotkeyclash.rb"
+    local sha tmp file
+    sha="$(shasum -a 256 "$DMG" | awk '{print $1}')"
+
+    tmp="$(mktemp -d)"
+    if ! gh repo clone "$tap_repo" "$tmp" -- --depth 1 --quiet 2>/dev/null; then
+        echo "Warning: could not clone $tap_repo; update the cask manually."
+        rm -rf "$tmp"; return
+    fi
+
+    file="$tmp/$cask_path"
+    [[ -f "$file" ]] || { echo "Warning: $cask_path missing in tap; skipping."; rm -rf "$tmp"; return; }
+
+    sed -i '' -E "s/^  version \".*\"/  version \"$VERSION\"/" "$file"
+    sed -i '' -E "s/^  sha256 \".*\"/  sha256 \"$sha\"/" "$file"
+
+    if [[ -z "$(cd "$tmp" && git status --porcelain)" ]]; then
+        echo "Tap cask already at $VERSION."; rm -rf "$tmp"; return
+    fi
+
+    ( cd "$tmp"
+      git add "$cask_path"
+      git commit -q -m "hotkeyclash $VERSION"
+      git push -q origin HEAD )
+    echo "Updated $tap_repo cask to $VERSION (sha256 $sha)."
+    rm -rf "$tmp"
+}
+
+if $DRAFT; then
+    echo "Draft release: skipping Homebrew tap bump. After publishing, re-run with --publish to update the tap."
+else
+    log "Updating Homebrew tap cask..."
+    update_tap
+fi
+
 url="$(gh release view "$TAG" --json url -q .url 2>/dev/null || true)"
 echo ""
 log "Done. ${url:-Release $TAG}"
