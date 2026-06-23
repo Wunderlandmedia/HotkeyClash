@@ -11,6 +11,10 @@
   <img src="https://img.shields.io/badge/dependencies-0-brightgreen?style=flat-square" alt="Zero dependencies">
 </p>
 
+<p align="center">
+  <a href="https://www.producthunt.com/products/hotkeyclash?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-hotkeyclash" target="_blank" rel="noopener noreferrer"><img alt="HotkeyClash - Find where your Mac keyboard shortcuts clash | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1178712&amp;theme=light&amp;t=1782223133628"></a>
+</p>
+
 <!--
 <p align="center">
   <img src=".github/assets/screenshot.png" alt="HotkeyClash screenshot" width="680">
