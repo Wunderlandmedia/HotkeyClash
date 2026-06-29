@@ -63,6 +63,15 @@ struct Conflict: Identifiable, Equatable {
         )
     }
 
+    /// Spelled-out, lowercased combo text for filtering (e.g. "command cmd shift g"),
+    /// so a query like "shift" or "cmd" matches a combo shown only as glyphs.
+    var searchableText: String {
+        ShortcutFormatter.searchableString(
+            keyCode: UInt32(keyCode),
+            carbonModifiers: ShortcutFormatter.carbonModifiers(from: modifiers)
+        )
+    }
+
     init(keyCode: UInt16, modifiers: NSEvent.ModifierFlags, bindings: [HotkeyBinding]) {
         self.id = UUID()
         self.keyCode = keyCode

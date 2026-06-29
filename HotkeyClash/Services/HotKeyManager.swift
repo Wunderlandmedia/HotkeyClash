@@ -75,6 +75,36 @@ enum ShortcutFormatter {
         return parts.joined()
     }
 
+    /// A plain-text, spelled-out form of the combo for searching, e.g.
+    /// "command cmd shift c". Includes modifier synonyms so a typed query like
+    /// "shift", "cmd", or "alt" matches a combo that only displays as glyphs.
+    static func searchableString(keyCode: UInt32, carbonModifiers: UInt32) -> String {
+        var parts: [String] = []
+        if carbonModifiers & UInt32(controlKey) != 0 { parts.append("control ctrl") }
+        if carbonModifiers & UInt32(optionKey) != 0 { parts.append("option opt alt") }
+        if carbonModifiers & UInt32(shiftKey) != 0 { parts.append("shift") }
+        if carbonModifiers & UInt32(cmdKey) != 0 { parts.append("command cmd") }
+        parts.append(searchableKeyName(for: keyCode))
+        return parts.joined(separator: " ")
+    }
+
+    /// Spelled-out key name for searching. Keys shown as glyphs (return, space,
+    /// arrows, etc.) get word forms; letters and numbers fall back to `keyName`.
+    static func searchableKeyName(for keyCode: UInt32) -> String {
+        switch keyCode {
+        case 0x24: "return enter"
+        case 0x30: "tab"
+        case 0x31: "space"
+        case 0x33: "delete backspace"
+        case 0x35: "escape esc"
+        case 0x7B: "left arrow"
+        case 0x7C: "right arrow"
+        case 0x7D: "down arrow"
+        case 0x7E: "up arrow"
+        default: keyName(for: keyCode).lowercased()
+        }
+    }
+
     static func keyName(for keyCode: UInt32) -> String {
         switch keyCode {
         case 0x00: "A"

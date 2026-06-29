@@ -1,12 +1,70 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
+/// The heart of the panel: a master-detail view over the scan results.
+///
+/// This view is really the conductor. The actual pieces it arranges, the search
+/// field, the summary header, the detail pane, and the various scan-state
+/// placeholders, each live in their own file so this one can stay about wiring
+/// them together: filtering the list, keeping a sane selection, and exporting.
 struct ConflictListView: View {
     var scanner: ShortcutScanner
 
     @State private var selectedID: Conflict.ID?
 
+    /// The query the list filters on. The search field owns its own live text and
+    /// only writes here after a debounce, so typing never invalidates this view's
+    /// body (the 125-row List, header, and detail pane). The heavy work runs once
+    /// typing settles, not on every keystroke.
+    @State private var debouncedQuery = ""
+
+    /// How long typing must pause before filtering runs. ~250ms is the sweet spot:
+    /// short enough to feel responsive, long enough to skip intermediate keystrokes. At least that's what I think lol.
+    private static let searchDebounce = Duration.milliseconds(250)
+
+    /// Per-conflict word list for searching, built once per scan rather than on
+    /// every keystroke. Keyed by conflict id. Words come from the spelled-out combo
+    /// (so "shift"/"cmd" match glyph combos), app names, and actions.
+    @State private var searchIndex: [Conflict.ID: [String]] = [:]
+
     private var rankedConflicts: [Conflict] {
         scanner.rankedConflicts
+    }
+
+    /// The sidebar list after applying the search filter. Each whitespace-separated
+    /// token must prefix-match some word in the precomputed index, with AND semantics
+    /// across tokens, so "cmd shift c" narrows in any order. Prefix (not substring)
+    /// matching keeps "p" from matching the middle of "WhatsApp". Empty query shows
+    /// everything. Driven by `debouncedQuery`, not `searchText`.
+    private var filteredConflicts: [Conflict] {
+        let tokens = debouncedQuery.lowercased().split(whereSeparator: \.isWhitespace).map(String.init)
+        guard !tokens.isEmpty else { return rankedConflicts }
+        return rankedConflicts.filter { conflict in
+            guard let words = searchIndex[conflict.id] else { return false }
+            return tokens.allSatisfy { token in words.contains { $0.hasPrefix(token) } }
+        }
+    }
+
+    /// Rebuilds the word index from the current scan results. Called when the
+    /// conflict set changes, not per keystroke.
+    private func rebuildSearchIndex() {
+        var index: [Conflict.ID: [String]] = [:]
+        for conflict in scanner.conflicts {
+            var words = conflict.searchableText.split(separator: " ").map(String.init)
+            for binding in conflict.bindings {
+                words += tokenize(binding.ownerName)
+                words += tokenize(binding.action)
+            }
+            index[conflict.id] = words
+        }
+        searchIndex = index
+    }
+
+    /// Splits free text into lowercased alphanumeric word tokens for the index.
+    private func tokenize(_ text: String) -> [String] {
+        text.lowercased()
+            .split { !$0.isLetter && !$0.isNumber }
+            .map(String.init)
     }
 
     private var selectedConflict: Conflict? {
@@ -36,17 +94,27 @@ struct ConflictListView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color("BrandBackground"))
-        .onChange(of: rankedConflicts) {
-            // Real conflicts pin to the top, app overlaps follow. Keep the selection
-            // valid as results change.
-            if selectedID == nil || !rankedConflicts.contains(where: { $0.id == selectedID }) {
-                selectedID = rankedConflicts.first?.id
+        .onChange(of: scanner.conflicts, initial: true) {
+            // Rebuild the search index once when a scan produces new results,
+            // not on every keystroke.
+            rebuildSearchIndex()
+        }
+        .onChange(of: filteredConflicts) {
+            // Real conflicts pin to the top, app overlaps follow, and the search
+            // filter narrows the list. Keep the selection on a visible row as
+            // results or the query change.
+            if selectedID == nil || !filteredConflicts.contains(where: { $0.id == selectedID }) {
+                selectedID = filteredConflicts.first?.id
             }
         }
     }
 
     private var splitResultsView: some View {
         VStack(spacing: 0) {
+            // Search is pinned at the very top so it is always reachable, then the
+            // summary toolbar, then the master-detail split.
+            ConflictSearchField(query: $debouncedQuery, debounce: Self.searchDebounce)
+            Divider()
             ResultsHeader(
                 realConflictCount: scanner.realConflictCount,
                 appOverlapCount: scanner.appOverlapCount,
@@ -54,215 +122,56 @@ struct ConflictListView: View {
                 scanDuration: scanner.scanDuration,
                 onRescan: {
                     selectedID = nil
+                    debouncedQuery = ""
                     Task { await scanner.rescan() }
-                }
+                },
+                onExport: exportReport
             )
             Divider()
             HStack(spacing: 0) {
+                sidebarList
+                Divider()
+                ConflictDetailPane(conflict: selectedConflict)
+            }
+        }
+    }
+
+    private var sidebarList: some View {
+        Group {
+            if filteredConflicts.isEmpty {
+                ContentUnavailableView.search(text: debouncedQuery)
+            } else {
                 // A List with a selection binding gives keyboard navigation, type
                 // select, and VoiceOver list semantics for free.
-                List(rankedConflicts, selection: $selectedID) { conflict in
+                List(filteredConflicts, selection: $selectedID) { conflict in
                     ConflictRow(conflict: conflict)
                         .tag(conflict.id)
                         .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 8))
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
-                .frame(width: 260)
-                Divider()
-                ConflictDetailPane(conflict: selectedConflict)
             }
         }
+        .frame(width: 260)
     }
-}
 
-// MARK: - Detail pane (dedicated view struct)
-
-private struct ConflictDetailPane: View {
-    let conflict: Conflict?
-
-    var body: some View {
-        Group {
-            if let conflict {
-                ScrollView {
-                    ConflictDetailView(conflict: conflict)
-                        .padding(20)
-                        .id(conflict.id)
-                }
-            } else {
-                VStack(spacing: 12) {
-                    Image(systemName: "sidebar.left")
-                        .font(.system(size: 32))
-                        .foregroundStyle(.quaternary)
-                    Text("Select a conflict")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
+    /// Renders the current conflicts to Markdown and writes them to a user-chosen
+    /// file. Uses the ranked (not filtered) list so the export is always complete,
+    /// independent of any active search.
+    private func exportReport() {
+        let markdown = ConflictReport.markdown(
+            conflicts: rankedConflicts,
+            bindingCount: scanner.allBindings.count,
+            scanDuration: scanner.scanDuration
+        )
+        let panel = NSSavePanel()
+        panel.title = "Export Conflict Report"
+        panel.nameFieldStringValue = "HotkeyClash-Conflicts.md"
+        panel.allowedContentTypes = [UTType(filenameExtension: "md") ?? .plainText]
+        panel.canCreateDirectories = true
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            try? markdown.write(to: url, atomically: true, encoding: .utf8)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color("BrandBackground").opacity(0.5))
-    }
-}
-
-// MARK: - Header
-
-private struct ResultsHeader: View {
-    let realConflictCount: Int
-    let appOverlapCount: Int
-    let bindingCount: Int
-    let scanDuration: TimeInterval
-    let onRescan: () -> Void
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: realConflictCount > 0 ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
-                .foregroundStyle(realConflictCount > 0 ? .orange : .green)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(headline)
-                    .font(.subheadline.weight(.semibold))
-                Text(subhead)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            Button("Rescan", action: onRescan)
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-    }
-
-    private var headline: String {
-        guard realConflictCount > 0 else { return "No always-on conflicts" }
-        let noun = realConflictCount == 1 ? "real conflict" : "real conflicts"
-        return "\(realConflictCount) \(noun)"
-    }
-
-    private var subhead: String {
-        let overlaps = appOverlapCount == 1 ? "1 menu overlap" : "\(appOverlapCount) menu overlaps"
-        return "\(overlaps), only clash when an app is focused \u{00B7} scanned \(bindingCount) shortcuts in \(String(format: "%.1f", scanDuration))s"
-    }
-}
-
-// MARK: - Idle
-
-private struct IdleView: View {
-    let onScan: () -> Void
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            Image(systemName: "keyboard")
-                .font(.system(size: 40))
-                .foregroundStyle(.secondary)
-            Text("Find shortcut conflicts")
-                .font(.headline)
-            Text("Scans running apps, config files, and system shortcuts for overlapping key combos.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-            Button {
-                onScan()
-            } label: {
-                Text("Scan")
-                    .font(.headline)
-                    .frame(maxWidth: 200)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            Text("Accessibility permission is needed to read app menu shortcuts.")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-            Spacer()
-        }
-        .padding()
-    }
-}
-
-// MARK: - Scanning
-
-private struct ScanningView: View {
-    let progress: String
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            ProgressView()
-                .controlSize(.large)
-            Text(progress)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Spacer()
-        }
-        .padding()
-    }
-}
-
-// MARK: - Empty Results
-
-private struct EmptyResultsView: View {
-    let bindingCount: Int
-    let scanDuration: TimeInterval
-    let onRescan: () -> Void
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            ContentUnavailableView(
-                "No Conflicts Found",
-                systemImage: "checkmark.circle",
-                description: Text("All \(bindingCount) shortcuts are unique. Scanned in \(String(format: "%.1f", scanDuration))s.")
-            )
-            Button("Rescan", action: onRescan)
-                .buttonStyle(.bordered)
-            Spacer()
-        }
-        .padding()
-    }
-}
-
-// MARK: - Error
-
-private struct ErrorView: View {
-    let message: String
-    let onRetry: () -> Void
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 40))
-                .foregroundStyle(.orange)
-            Text("Scan Failed")
-                .font(.headline)
-            Text(message)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-            if message.lowercased().contains("accessibility") {
-                Button("Open System Settings") {
-                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-                        NSWorkspace.shared.open(url)
-                    }
-                    // Dismiss the panel as System Settings opens, so the user isn't
-                    // left looking at the permission screen behind it. They reopen
-                    // from the menu bar and scan once access is granted.
-                    NotificationCenter.default.post(name: .dismissPanel, object: nil)
-                }
-                .buttonStyle(.borderedProminent)
-            } else {
-                Button("Retry", action: onRetry)
-                    .buttonStyle(.bordered)
-            }
-            Spacer()
-        }
-        .padding()
     }
 }
