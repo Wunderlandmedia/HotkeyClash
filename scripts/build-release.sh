@@ -192,6 +192,16 @@ create_dmg() {
 
     log "Creating DMG: $dmg_name"
 
+    # Detach leftovers from a previous failed run first. A stale volume named
+    # "HotkeyClash" makes the fresh image mount as "HotkeyClash 1", and the
+    # Finder styling below then talks to the wrong disk and dies.
+    for vol in "/Volumes/$APP_NAME" "/Volumes/$APP_NAME "[0-9]*; do
+        if [[ -d "$vol" ]]; then
+            log "Detaching stale volume: $vol"
+            hdiutil detach "$vol" -force -quiet || true
+        fi
+    done
+
     mkdir -p "$DMG_DIR"
     rm -rf "$DMG_DIR/"*
 
@@ -217,8 +227,10 @@ create_dmg() {
     device=$(hdiutil attach -readwrite -noverify "$tmp_dmg" | grep '/Volumes/' | awk '{print $1}')
     local mount_point="/Volumes/$APP_NAME"
 
+    # The Finder styling is cosmetic; a failure here (usually missing Automation
+    # permission for the terminal) must not abort the release build.
     if [[ -f "$dmg_bg" ]]; then
-        osascript <<APPLESCRIPT
+        osascript <<APPLESCRIPT || log "WARNING: Finder styling failed; continuing with default DMG layout"
 tell application "Finder"
     tell disk "$APP_NAME"
         open
@@ -241,7 +253,7 @@ tell application "Finder"
 end tell
 APPLESCRIPT
     else
-        osascript <<APPLESCRIPT
+        osascript <<APPLESCRIPT || log "WARNING: Finder styling failed; continuing with default DMG layout"
 tell application "Finder"
     tell disk "$APP_NAME"
         open
@@ -265,7 +277,8 @@ APPLESCRIPT
     fi
 
     sync
-    hdiutil detach "$device" -quiet
+    # Finder can still hold the volume for a beat after the styling window closes.
+    hdiutil detach "$device" -quiet || { sleep 2; hdiutil detach "$device" -force -quiet; }
     hdiutil convert "$tmp_dmg" -format UDZO -imagekey zlib-level=9 -o "$dmg_path"
     rm -f "$tmp_dmg"
 
