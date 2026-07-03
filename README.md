@@ -88,6 +88,16 @@ Accessibility permission is required to scan running apps. Config files and syst
 - Export conflict report as Markdown
 - Auto-rescan on app launch/quit
 
+## Star History
+
+<a href="https://www.star-history.com/?repos=Wunderlandmedia%2FHotkeyClash&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Wunderlandmedia/HotkeyClash&type=date&theme=dark&legend=bottom-right" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Wunderlandmedia/HotkeyClash&type=date&legend=bottom-right" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Wunderlandmedia/HotkeyClash&type=date&legend=bottom-right" />
+ </picture>
+</a>
+
 ## Also by Wunderlandmedia
 
 - [QuietClip](https://quietclip.app) -- Privacy-first clipboard manager for macOS
