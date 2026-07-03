@@ -10,12 +10,19 @@ final class ConfigFileScanner {
     /// Upper bound on a config file we are willing to read into memory.
     private static let maxConfigBytes = 10 * 1024 * 1024
 
+    /// The heavier tools keep their parsers in their own files; this scanner
+    /// stays the one place that knows the full list of config sources.
+    private let keyboardMaestro = KeyboardMaestroScanner()
+    private let betterTouchTool = BetterTouchToolScanner()
+
     // MARK: - Public
 
-    func scan() -> [HotkeyBinding] {
+    func scan() async -> [HotkeyBinding] {
         var bindings: [HotkeyBinding] = []
         bindings.append(contentsOf: scanKarabiner())
         bindings.append(contentsOf: scanSkhd())
+        bindings.append(contentsOf: await keyboardMaestro.scan())
+        bindings.append(contentsOf: await betterTouchTool.scan())
         return bindings
     }
 

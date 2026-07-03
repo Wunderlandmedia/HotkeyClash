@@ -65,7 +65,7 @@ struct GeneralSettingsTab: View {
                     SettingsRow(showDivider: false) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Config files")
-                            Text("Karabiner-Elements and skhd")
+                            Text("Karabiner-Elements, skhd, Keyboard Maestro, BetterTouchTool")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }

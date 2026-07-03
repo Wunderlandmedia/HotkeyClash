@@ -82,7 +82,7 @@ final class SettingsManager {
         didSet { defaults.set(scanRunningApps, forKey: Keys.scanRunningApps) }
     }
 
-    /// Scan Karabiner-Elements and skhd config files.
+    /// Scan automation tool config files (Karabiner-Elements, skhd, Keyboard Maestro, BetterTouchTool).
     var scanConfigFiles: Bool {
         didSet { defaults.set(scanConfigFiles, forKey: Keys.scanConfigFiles) }
     }

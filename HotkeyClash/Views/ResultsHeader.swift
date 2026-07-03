@@ -7,6 +7,7 @@ import SwiftUI
 /// bite), and tucks the menu-overlap noise into the subhead. Most of those
 /// overlaps are just every app sharing Cmd+C, so they shouldn't steal the spotlight.
 struct ResultsHeader: View {
+    @Binding var scope: ConflictScope
     let realConflictCount: Int
     let appOverlapCount: Int
     let bindingCount: Int
@@ -28,6 +29,16 @@ struct ResultsHeader: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            Picker("Show", selection: $scope) {
+                ForEach(ConflictScope.allCases) { scope in
+                    Text(scope.label).tag(scope)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .controlSize(.small)
+            .fixedSize()
+            .help("Choose which conflicts the list shows")
             Button("Export", systemImage: "square.and.arrow.up", action: onExport)
                 .buttonStyle(.bordered)
                 .controlSize(.small)

@@ -18,6 +18,10 @@ struct ConflictListView: View {
     /// typing settles, not on every keystroke.
     @State private var debouncedQuery = ""
 
+    /// Severity scope from the header picker. Applied before the search filter.
+    /// Survives rescans on purpose: it is a viewing preference, not a query.
+    @State private var scope: ConflictScope = .all
+
     /// How long typing must pause before filtering runs. ~250ms is the sweet spot:
     /// short enough to feel responsive, long enough to skip intermediate keystrokes. At least that's what I think lol.
     private static let searchDebounce = Duration.milliseconds(250)
@@ -31,15 +35,17 @@ struct ConflictListView: View {
         scanner.rankedConflicts
     }
 
-    /// The sidebar list after applying the search filter. Each whitespace-separated
+    /// The sidebar list after applying the severity scope and the search filter.
+    /// Scope narrows first (cheap category check), then each whitespace-separated
     /// token must prefix-match some word in the precomputed index, with AND semantics
     /// across tokens, so "cmd shift c" narrows in any order. Prefix (not substring)
     /// matching keeps "p" from matching the middle of "WhatsApp". Empty query shows
-    /// everything. Driven by `debouncedQuery`, not `searchText`.
+    /// everything in scope. Driven by `debouncedQuery`, not `searchText`.
     private var filteredConflicts: [Conflict] {
+        let scoped = scope == .all ? rankedConflicts : rankedConflicts.filter { scope.matches($0) }
         let tokens = debouncedQuery.lowercased().split(whereSeparator: \.isWhitespace).map(String.init)
-        guard !tokens.isEmpty else { return rankedConflicts }
-        return rankedConflicts.filter { conflict in
+        guard !tokens.isEmpty else { return scoped }
+        return scoped.filter { conflict in
             guard let words = searchIndex[conflict.id] else { return false }
             return tokens.allSatisfy { token in words.contains { $0.hasPrefix(token) } }
         }
@@ -116,6 +122,7 @@ struct ConflictListView: View {
             ConflictSearchField(query: $debouncedQuery, debounce: Self.searchDebounce)
             Divider()
             ResultsHeader(
+                scope: $scope,
                 realConflictCount: scanner.realConflictCount,
                 appOverlapCount: scanner.appOverlapCount,
                 bindingCount: scanner.allBindings.count,
@@ -139,7 +146,16 @@ struct ConflictListView: View {
     private var sidebarList: some View {
         Group {
             if filteredConflicts.isEmpty {
-                ContentUnavailableView.search(text: debouncedQuery)
+                // Match the filter's own idea of "no query": a whitespace-only
+                // query produces no tokens and filters nothing, so it must not
+                // trigger the failed-search state either.
+                if debouncedQuery.trimmingCharacters(in: .whitespaces).isEmpty {
+                    // The scope alone emptied the list: that is good news, not a
+                    // failed search, so say so instead of showing the search state.
+                    ContentUnavailableView(scope.emptyMessage, systemImage: "checkmark.circle")
+                } else {
+                    ContentUnavailableView.search(text: debouncedQuery)
+                }
             } else {
                 // A List with a selection binding gives keyboard navigation, type
                 // select, and VoiceOver list semantics for free.

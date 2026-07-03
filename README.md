@@ -26,7 +26,7 @@ Open-source macOS menu bar utility that scans running apps, config files, and sy
 ## Features
 
 - Scans running apps' menu bar shortcuts via Accessibility API
-- Parses Karabiner-Elements and skhd config files
+- Parses Karabiner-Elements, skhd, Keyboard Maestro, and BetterTouchTool configs
 - Reads macOS system shortcuts (Spotlight, Mission Control, Screenshots, etc.)
 - Classifies conflicts as definite (global vs global) or potential (menu vs menu)
 - 720x520 split view: conflict sidebar + detail pane with app icons and source badges
@@ -75,13 +75,15 @@ Artifacts land in `build/release/`.
 | Running apps | Accessibility API (AXMenuBar traversal) |
 | Karabiner-Elements | `~/.config/karabiner/karabiner.json` |
 | skhd | `~/.config/skhd/skhdrc` |
+| Keyboard Maestro | `~/Library/Application Support/Keyboard Maestro/Keyboard Maestro Macros.plist` |
+| BetterTouchTool | `~/Library/Application Support/BetterTouchTool/btt_data_store.*` (SQLite, read-only) |
 | macOS system shortcuts | `com.apple.symbolichotkeys` plist |
 
 Accessibility permission is required to scan running apps. Config files and system shortcuts work without it.
 
 ## Planned
 
-- Keyboard Maestro, BetterTouchTool, Hammerspoon, Alfred, Raycast parsers
+- Hammerspoon, Alfred, Raycast parsers
 - Real-time "test this shortcut" mode (press a combo, see which app catches it)
 - Export conflict report as Markdown
 - Auto-rescan on app launch/quit

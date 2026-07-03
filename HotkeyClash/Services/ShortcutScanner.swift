@@ -112,10 +112,10 @@ final class ShortcutScanner {
             bindings += systemShortcutScanner.scan()
         }
 
-        // 2. Config files (fast, no AX needed)
+        // 2. Config files (no AX needed; the heavier parsers run off-main)
         if scanConfigFiles {
             state = .scanning(progress: "Reading config files...")
-            bindings += configFileScanner.scan()
+            bindings += await configFileScanner.scan()
         }
 
         // 3. Menu bar shortcuts (needs AX, runs off the main actor)
