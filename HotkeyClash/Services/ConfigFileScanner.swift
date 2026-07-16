@@ -14,6 +14,7 @@ final class ConfigFileScanner {
     /// stays the one place that knows the full list of config sources.
     private let keyboardMaestro = KeyboardMaestroScanner()
     private let betterTouchTool = BetterTouchToolScanner()
+    private let hammerspoon = HammerspoonScanner()
 
     // MARK: - Public
 
@@ -23,6 +24,7 @@ final class ConfigFileScanner {
         bindings.append(contentsOf: scanSkhd())
         bindings.append(contentsOf: await keyboardMaestro.scan())
         bindings.append(contentsOf: await betterTouchTool.scan())
+        bindings.append(contentsOf: await hammerspoon.scan())
         return bindings
     }
 
