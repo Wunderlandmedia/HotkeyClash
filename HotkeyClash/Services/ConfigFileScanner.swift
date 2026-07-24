@@ -15,6 +15,7 @@ final class ConfigFileScanner {
     private let keyboardMaestro = KeyboardMaestroScanner()
     private let betterTouchTool = BetterTouchToolScanner()
     private let hammerspoon = HammerspoonScanner()
+    private let alfred = AlfredScanner()
 
     // MARK: - Public
 
@@ -25,6 +26,7 @@ final class ConfigFileScanner {
         bindings.append(contentsOf: await keyboardMaestro.scan())
         bindings.append(contentsOf: await betterTouchTool.scan())
         bindings.append(contentsOf: await hammerspoon.scan())
+        bindings.append(contentsOf: await alfred.scan())
         return bindings
     }
 
