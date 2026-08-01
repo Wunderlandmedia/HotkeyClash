@@ -26,9 +26,11 @@ Open-source macOS menu bar utility that scans running apps, config files, and sy
 ## Features
 
 - Scans running apps' menu bar shortcuts via Accessibility API
-- Parses Karabiner-Elements, skhd, Keyboard Maestro, and BetterTouchTool configs
+- Parses Karabiner-Elements, skhd, Keyboard Maestro, BetterTouchTool, Hammerspoon, and Alfred configs
 - Reads macOS system shortcuts (Spotlight, Mission Control, Screenshots, etc.)
 - Classifies conflicts as definite (global vs global) or potential (menu vs menu)
+- Tells you which shortcut most likely wins, based on where each one hooks the keyboard
+- Search by app, action, or key combo, and export the whole report as Markdown
 - 720x520 split view: conflict sidebar + detail pane with app icons and source badges
 - Zero external dependencies. Pure Apple frameworks.
 
@@ -77,7 +79,23 @@ Artifacts land in `build/release/`.
 | skhd | `~/.config/skhd/skhdrc` |
 | Keyboard Maestro | `~/Library/Application Support/Keyboard Maestro/Keyboard Maestro Macros.plist` |
 | BetterTouchTool | `~/Library/Application Support/BetterTouchTool/btt_data_store.*` (SQLite, read-only) |
+| Hammerspoon | `~/.hammerspoon/init.lua` (`hs.hotkey.bind` calls) |
+| Alfred | `Alfred.alfredpreferences` workflow `info.plist` hotkey triggers |
 | macOS system shortcuts | `com.apple.symbolichotkeys` plist |
+
+## Which shortcut actually wins?
+
+A conflict list tells you two things claim the same keys. It does not tell you which one fires. HotkeyClash answers that by working out where each shortcut hooks the keyboard:
+
+| Layer | Who is there | Sees the key |
+|-------|--------------|--------------|
+| Driver | Karabiner-Elements | First, before macOS |
+| Event tap | skhd, BetterTouchTool, Keyboard Maestro | Ahead of the system's own shortcuts |
+| System | macOS symbolic hotkeys | Before any app-level hotkey |
+| Global hotkey | Hammerspoon, Alfred | System wide, if nothing above took it |
+| Menu item | The frontmost app | Last, and only when that app is focused |
+
+The lowest layer usually wins, and that is the one HotkeyClash marks. When two tools sit on the same layer it says so instead of guessing, because the tiebreaker is registration order and no config file on disk records it.
 
 Accessibility permission is required to scan running apps. Config files and system shortcuts work without it.
 
