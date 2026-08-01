@@ -40,8 +40,10 @@ struct BindingRow: View {
 
             Spacer()
 
-            badge(layer.label, tint: layerColor)
-                .help(layer.explanation)
+            if showsLayerBadge {
+                badge(layer.label, tint: layerColor)
+                    .help(layer.explanation)
+            }
             badge(sourceLabel, tint: sourceColor)
         }
         .padding(.vertical, 8)
@@ -72,6 +74,15 @@ struct BindingRow: View {
     }
 
     // MARK: - Badges
+
+    /// The layer only earns its own badge when the source badge doesn't already
+    /// give it away. A system shortcut is always the system layer and a menu
+    /// shortcut is always a menu item, so showing both just reads as a stutter
+    /// ("System System"). Config covers six tools on four different layers,
+    /// which is exactly where the distinction is worth the pixels.
+    private var showsLayerBadge: Bool {
+        binding.source == .configFile
+    }
 
     private func badge(_ text: String, tint: Color) -> some View {
         Text(text)

@@ -17,7 +17,9 @@ struct ConflictDetailView: View {
                     .background(.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("\(conflict.bindings.count) apps use this shortcut")
+                    // Count apps, not bindings. One app claiming a combo twice
+                    // is one app, however many rows it puts in the list.
+                    Text("\(conflict.appCount) \(conflict.appCount == 1 ? "app uses" : "apps use") this shortcut")
                         .font(.subheadline.weight(.medium))
 
                     Text(severityLabel)

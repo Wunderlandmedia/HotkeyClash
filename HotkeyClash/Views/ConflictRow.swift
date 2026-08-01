@@ -35,7 +35,9 @@ struct ConflictRow: View {
             let sorted = unique.sorted()
             return "\(sorted[0]) vs \(sorted[1])"
         }
-        return "\(unique.count) apps"
+        // One app can claim the same combo twice (two menu items, or a tool with
+        // duplicate rules), so the count really can be 1 here.
+        return "\(unique.count) \(unique.count == 1 ? "app" : "apps")"
     }
 }
 
