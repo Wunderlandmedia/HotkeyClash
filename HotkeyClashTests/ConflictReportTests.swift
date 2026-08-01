@@ -71,8 +71,25 @@ struct ConflictReportTests {
 
         let md = ConflictReport.markdown(conflicts: [c], bindingCount: 2, scanDuration: 0.1)
 
-        #expect(md.contains("**System** (System): Mission Control"))
-        #expect(md.contains("**skhd** (Config): Focus left"))
+        #expect(md.contains("**System** (System, System): Mission Control"))
+        #expect(md.contains("**skhd** (Config, Event Tap): Focus left"))
+    }
+
+    @Test("Each conflict carries its likely-winner verdict")
+    func winnerVerdict() {
+        let clear = conflict([
+            binding(owner: "skhd", action: "Focus left", source: .configFile),
+            binding(owner: "macOS", action: "Mission Control", source: .systemShortcut),
+        ])
+        let overlap = conflict([
+            binding(keyCode: 0x08, owner: "Safari", action: "Copy", source: .menuBar),
+            binding(keyCode: 0x08, owner: "Notes", action: "Copy", source: .menuBar),
+        ])
+
+        let md = ConflictReport.markdown(conflicts: [clear, overlap], bindingCount: 4, scanDuration: 0.2)
+
+        #expect(md.contains("Likely winner: skhd most likely wins."))
+        #expect(md.contains("No contest: Whichever app is frontmost wins."))
     }
 
     @Test("Report avoids em dashes per project convention")

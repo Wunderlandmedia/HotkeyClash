@@ -55,6 +55,13 @@ struct Conflict: Identifiable, Equatable {
         Set(bindings.map { $0.ownerBundleID ?? $0.ownerName }).count
     }
 
+    /// Best static guess at which binding actually receives this combo, derived
+    /// from where each one hooks the event stack. See `LikelyWinner` for how far
+    /// that guess can be trusted.
+    var likelyWinner: LikelyWinner? {
+        LikelyWinner.evaluate(bindings)
+    }
+
     /// Human-readable display string for the key combo (e.g. "\u{2318}\u{21E7}G").
     var displayString: String {
         ShortcutFormatter.displayString(

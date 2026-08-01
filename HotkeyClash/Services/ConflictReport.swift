@@ -60,8 +60,13 @@ enum ConflictReport {
         lines.append("")
         lines.append("Severity: \(severityText(conflict.severity))")
         lines.append("")
+        if let verdict = conflict.likelyWinner {
+            lines.append("\(winnerHeadline(verdict)): \(verdict.summary)")
+            lines.append("")
+        }
         for binding in sortedBindings(conflict.bindings) {
-            lines.append("- **\(binding.ownerName)** (\(sourceLabel(binding.source))): \(binding.action)")
+            let layer = HotkeyLayer.classify(binding)
+            lines.append("- **\(binding.ownerName)** (\(sourceLabel(binding.source)), \(layer.label)): \(binding.action)")
         }
         lines.append("")
         return lines
@@ -76,15 +81,22 @@ enum ConflictReport {
 
     // MARK: - Labels
 
-    /// Mirrors `ConflictDetailView`'s source ordering: system first, then config,
-    /// then menu bar, with apps alphabetical within a source.
+    /// Mirrors `ConflictDetailView`'s ordering: earliest hook in the event stack
+    /// first, with apps alphabetical inside a layer.
     private static func sortedBindings(_ bindings: [HotkeyBinding]) -> [HotkeyBinding] {
-        let order: [HotkeyBinding.BindingSource] = [.systemShortcut, .configFile, .menuBar]
-        return bindings.sorted { lhs, rhs in
-            let lhsIndex = order.firstIndex(of: lhs.source) ?? order.count
-            let rhsIndex = order.firstIndex(of: rhs.source) ?? order.count
-            if lhsIndex != rhsIndex { return lhsIndex < rhsIndex }
+        bindings.sorted { lhs, rhs in
+            let lhsLayer = HotkeyLayer.classify(lhs)
+            let rhsLayer = HotkeyLayer.classify(rhs)
+            if lhsLayer != rhsLayer { return lhsLayer < rhsLayer }
             return lhs.ownerName < rhs.ownerName
+        }
+    }
+
+    private static func winnerHeadline(_ verdict: LikelyWinner) -> String {
+        switch verdict {
+        case .likely: "Likely winner"
+        case .tied: "Too close to call"
+        case .focusDependent: "No contest"
         }
     }
 

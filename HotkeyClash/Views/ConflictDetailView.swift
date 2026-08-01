@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// The full picture for one conflict: the combo, our guess at who wins it, and
+/// every binding that claims it, ordered by how early it hooks the event stack.
 struct ConflictDetailView: View {
     let conflict: Conflict
     @State private var icons: [String: NSImage] = [:]
@@ -24,30 +26,20 @@ struct ConflictDetailView: View {
                 }
             }
 
+            if let verdict = conflict.likelyWinner {
+                LikelyWinnerCallout(verdict: verdict)
+            }
+
             Divider()
 
             // Binding list
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(sortedBindings) { binding in
-                    HStack(spacing: 10) {
-                        appIcon(for: binding)
-                            .frame(width: 28, height: 28)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(binding.ownerName)
-                                .font(.subheadline.weight(.semibold))
-
-                            Text(binding.action)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
-                        }
-
-                        Spacer()
-
-                        sourceBadge(for: binding.source)
-                    }
-                    .padding(.vertical, 8)
+                    BindingRow(
+                        binding: binding,
+                        icon: binding.ownerBundleID.flatMap { icons[$0] },
+                        isLikelyWinner: binding.id == winningBindingID
+                    )
 
                     if binding.id != sortedBindings.last?.id {
                         Divider()
@@ -59,9 +51,10 @@ struct ConflictDetailView: View {
             Divider()
 
             // Explanation
-            Text("Global and system shortcuts take priority over app menu shortcuts. Menu shortcuts only apply when that app is focused.")
+            Text("Ordered by where each shortcut hooks the keyboard: driver remaps first, then event taps, system shortcuts, global hotkeys, and finally app menus. Registration order breaks ties, and nothing on disk records it.")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .task(id: conflict.id) { loadIcons() }
     }
@@ -75,12 +68,17 @@ struct ConflictDetailView: View {
         }
     }
 
+    private var winningBindingID: UUID? {
+        conflict.likelyWinner?.winningBindingID
+    }
+
+    /// Sorted by event-stack layer so the list reads top-down in the same order
+    /// macOS resolves the keypress, with apps alphabetical inside a layer.
     private var sortedBindings: [HotkeyBinding] {
         conflict.bindings.sorted { lhs, rhs in
-            let order: [HotkeyBinding.BindingSource] = [.systemShortcut, .configFile, .menuBar]
-            let lhsIndex = order.firstIndex(of: lhs.source) ?? 3
-            let rhsIndex = order.firstIndex(of: rhs.source) ?? 3
-            if lhsIndex != rhsIndex { return lhsIndex < rhsIndex }
+            let lhsLayer = HotkeyLayer.classify(lhs)
+            let rhsLayer = HotkeyLayer.classify(rhs)
+            if lhsLayer != rhsLayer { return lhsLayer < rhsLayer }
             return lhs.ownerName < rhs.ownerName
         }
     }
@@ -97,54 +95,5 @@ struct ConflictDetailView: View {
             }
         }
         icons = resolved
-    }
-
-    @ViewBuilder
-    private func appIcon(for binding: HotkeyBinding) -> some View {
-        if let bundleID = binding.ownerBundleID, let icon = icons[bundleID] {
-            Image(nsImage: icon)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-        } else {
-            Image(systemName: iconName(for: binding.source))
-                .font(.system(size: 16))
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-    }
-
-    private func iconName(for source: HotkeyBinding.BindingSource) -> String {
-        switch source {
-        case .menuBar: "menubar.rectangle"
-        case .configFile: "doc.text"
-        case .systemShortcut: "gearshape"
-        }
-    }
-
-    // MARK: - Source Badge
-
-    private func sourceBadge(for source: HotkeyBinding.BindingSource) -> some View {
-        Text(sourceLabel(for: source))
-            .font(.caption2.weight(.medium))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .foregroundStyle(sourceColor(for: source))
-            .background(sourceColor(for: source).opacity(0.12), in: Capsule())
-    }
-
-    private func sourceLabel(for source: HotkeyBinding.BindingSource) -> String {
-        switch source {
-        case .menuBar: "Menu Bar"
-        case .configFile: "Config"
-        case .systemShortcut: "System"
-        }
-    }
-
-    private func sourceColor(for source: HotkeyBinding.BindingSource) -> Color {
-        switch source {
-        case .menuBar: .blue
-        case .configFile: .purple
-        case .systemShortcut: .orange
-        }
     }
 }
