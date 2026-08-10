@@ -15,7 +15,7 @@ struct GeneralSettingsTab: View {
                             .toggleStyle(.switch)
                             .labelsHidden()
                     }
-                    SettingsRow(showDivider: false) {
+                    SettingsRow {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Scan on launch")
                             Text("Automatically scan for shortcut conflicts when HotkeyClash starts")
@@ -24,6 +24,18 @@ struct GeneralSettingsTab: View {
                         }
                         Spacer()
                         Toggle("Scan on launch", isOn: Bindable(settings).scanOnLaunch)
+                            .toggleStyle(.switch)
+                            .labelsHidden()
+                    }
+                    SettingsRow(showDivider: false) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Rescan when apps open or quit")
+                            Text("Keeps the results and the menu bar count current. Never runs while the panel is open.")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Toggle("Rescan when apps open or quit", isOn: Bindable(settings).autoRescanOnAppChange)
                             .toggleStyle(.switch)
                             .labelsHidden()
                     }

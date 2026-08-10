@@ -39,10 +39,14 @@ final class StatusBarController {
         }
     }
 
+    /// Whether the panel is on screen. The auto rescan asks before scanning, so it
+    /// never rebuilds the list while someone is reading it.
+    var isPanelVisible: Bool { panel?.isVisible ?? false }
+
     func showPopover() {
         previousApp = NSWorkspace.shared.frontmostApplication
         panel.cancelDismiss()
-        panel.centerOnScreen()
+        panel.restorePosition()
         panel.makeKeyAndOrderFront(nil)
         panel.animateIn()
         NSApp.activate()
@@ -176,7 +180,9 @@ final class FloatingPanel: NSPanel {
         isOpaque = false
         backgroundColor = .clear
         hasShadow = false
-        isMovableByWindowBackground = false
+        // Draggable by its background: with no title bar there is nowhere else to
+        // grab it, and a panel you cannot move is a panel permanently in the way.
+        isMovableByWindowBackground = true
         hidesOnDeactivate = false
         animationBehavior = .utilityWindow
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -192,6 +198,29 @@ final class FloatingPanel: NSPanel {
                 .clipShape(.rect(cornerRadius: 14, style: .continuous))
         )
         self.contentView = hostView
+        delegate = self
+    }
+
+    /// Puts the panel back where the user left it, or centres it if that spot is
+    /// no longer sensible.
+    ///
+    /// "No longer sensible" is mostly about displays. Move the panel onto a second
+    /// monitor, unplug it, and the saved origin now points into empty space where
+    /// the panel would be invisible with no way to drag it back. So we insist the
+    /// restored frame still overlaps a connected screen by a decent margin before
+    /// trusting it.
+    func restorePosition() {
+        guard let origin = SettingsManager.shared.panelOrigin,
+              Self.isUsable(origin: origin, size: frame.size) else {
+            centerOnScreen()
+            return
+        }
+        setFrameOrigin(origin)
+    }
+
+    /// Records where the panel is now, so the next open lands in the same place.
+    func savePosition() {
+        SettingsManager.shared.panelOrigin = frame.origin
     }
 
     func centerOnScreen() {
@@ -200,6 +229,19 @@ final class FloatingPanel: NSPanel {
         let x = screenFrame.midX - frame.width / 2
         let y = screenFrame.midY - frame.height / 2
         setFrameOrigin(NSPoint(x: x, y: y))
+    }
+
+    /// A saved spot counts as usable when a fair chunk of the panel would still be
+    /// on some screen. A sliver poking onto a display is technically visible and
+    /// practically useless, hence the area test rather than a plain intersection.
+    private static func isUsable(origin: CGPoint, size: CGSize) -> Bool {
+        let proposed = NSRect(origin: origin, size: size)
+        let minimumVisible = proposed.width * proposed.height * 0.5
+        return NSScreen.screens.contains { screen in
+            let overlap = screen.visibleFrame.intersection(proposed)
+            guard !overlap.isNull else { return false }
+            return overlap.width * overlap.height >= minimumVisible
+        }
     }
 
     func animateIn() {
@@ -277,4 +319,12 @@ final class FloatingPanel: NSPanel {
     }
 
     override var canBecomeKey: Bool { true }
+}
+
+extension FloatingPanel: NSWindowDelegate {
+    /// Save on every move rather than only on close, so a crash or a force quit
+    /// cannot lose the position the user just chose.
+    func windowDidMove(_ notification: Notification) {
+        savePosition()
+    }
 }

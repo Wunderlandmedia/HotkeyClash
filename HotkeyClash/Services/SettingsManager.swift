@@ -20,6 +20,10 @@ final class SettingsManager {
         static let scanConfigFiles = "scanConfigFiles"
         static let scanSystemShortcuts = "scanSystemShortcuts"
         static let includeBackgroundApps = "includeBackgroundApps"
+        static let autoRescanOnAppChange = "autoRescanOnAppChange"
+        static let panelOriginX = "panelOriginX"
+        static let panelOriginY = "panelOriginY"
+        static let hasSavedPanelOrigin = "hasSavedPanelOrigin"
     }
 
     static let defaultShortcutKeyCode: UInt32 = 0x04 // H
@@ -34,7 +38,8 @@ final class SettingsManager {
             Keys.scanRunningApps: true,
             Keys.scanConfigFiles: true,
             Keys.scanSystemShortcuts: true,
-            Keys.includeBackgroundApps: true
+            Keys.includeBackgroundApps: true,
+            Keys.autoRescanOnAppChange: true
         ])
 
         launchAtLogin = defaults.bool(forKey: Keys.launchAtLogin)
@@ -45,6 +50,7 @@ final class SettingsManager {
         scanConfigFiles = defaults.bool(forKey: Keys.scanConfigFiles)
         scanSystemShortcuts = defaults.bool(forKey: Keys.scanSystemShortcuts)
         includeBackgroundApps = defaults.bool(forKey: Keys.includeBackgroundApps)
+        autoRescanOnAppChange = defaults.bool(forKey: Keys.autoRescanOnAppChange)
     }
 
     var hasCompletedOnboarding: Bool {
@@ -99,4 +105,36 @@ final class SettingsManager {
         didSet { defaults.set(includeBackgroundApps, forKey: Keys.includeBackgroundApps) }
     }
 
+    /// Rescan by itself when apps launch or quit, so the results and the badge do
+    /// not quietly go stale. On by default: a wrong count is worse than a scan.
+    var autoRescanOnAppChange: Bool {
+        didSet { defaults.set(autoRescanOnAppChange, forKey: Keys.autoRescanOnAppChange) }
+    }
+
+    // MARK: - Panel position
+
+    /// Where the user last left the panel, in screen coordinates.
+    ///
+    /// Stored as two doubles rather than an archived point because that survives
+    /// every plist round trip without a coder. Reading back nil means "never
+    /// moved", which the panel treats as "centre me", and so does a saved spot
+    /// that no longer lands on a connected display.
+    var panelOrigin: CGPoint? {
+        get {
+            guard defaults.bool(forKey: Keys.hasSavedPanelOrigin) else { return nil }
+            return CGPoint(
+                x: defaults.double(forKey: Keys.panelOriginX),
+                y: defaults.double(forKey: Keys.panelOriginY)
+            )
+        }
+        set {
+            guard let newValue else {
+                defaults.set(false, forKey: Keys.hasSavedPanelOrigin)
+                return
+            }
+            defaults.set(newValue.x, forKey: Keys.panelOriginX)
+            defaults.set(newValue.y, forKey: Keys.panelOriginY)
+            defaults.set(true, forKey: Keys.hasSavedPanelOrigin)
+        }
+    }
 }

@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let scanner = ShortcutScanner()
     private var scanTask: Task<Void, Never>?
     private var didCompleteSetup = false
+    private var workspaceWatcher: WorkspaceWatcher?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if !SettingsManager.shared.hasCompletedOnboarding {
@@ -95,6 +96,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             object: nil
         )
 
+        startWorkspaceWatcher()
+
         // Scan on launch if enabled and AX permission is granted
         if settings.scanOnLaunch && AccessibilityService.checkPermission() {
             startScan(rescan: false)
@@ -104,7 +107,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        workspaceWatcher?.stop()
         HotKeyManager.shared.unregister()
+    }
+
+    // MARK: - Auto rescan
+
+    /// Keeps the results honest as apps come and go. The watcher notices the churn;
+    /// the conditions below decide whether acting on it is welcome.
+    private func startWorkspaceWatcher() {
+        let watcher = WorkspaceWatcher(
+            shouldRescan: { [weak self] in
+                guard let self else { return false }
+                guard SettingsManager.shared.autoRescanOnAppChange else { return false }
+                // A scan that cannot read app menus would come back with less than
+                // the results already on screen, which is worse than being stale.
+                guard AccessibilityService.checkPermission() else { return false }
+                // Never rebuild the list out from under someone reading it.
+                return !statusBar.isPanelVisible
+            },
+            onRescan: { [weak self] in
+                self?.startScan(rescan: true)
+            }
+        )
+        watcher.start()
+        workspaceWatcher = watcher
     }
 
     @objc private func openSettings() {
@@ -135,17 +162,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         statusBar.hidePopover()
     }
 
-    /// Runs a scan, superseding any in-flight one, then refreshes the menu bar badge.
+    /// Runs a scan and then refreshes the menu bar badge, queueing behind any scan
+    /// already in flight.
+    ///
+    /// This used to cancel the previous task and start a fresh one, which quietly
+    /// did the wrong thing. Cancellation is cooperative and the scan body never
+    /// checks for it, so the old scan kept running regardless; the replacement then
+    /// found the scanner busy, returned immediately without scanning, and updated
+    /// the badge from the stale counts. Rare when the only trigger was an impatient
+    /// double click, but the auto rescan makes app churn a trigger too. Waiting for
+    /// the previous task means every request produces a real scan and a badge that
+    /// matches it. Nothing can pile up here: the Rescan button is off screen while
+    /// a scan runs, and the watcher debounces before it asks.
     private func startScan(rescan: Bool) {
-        scanTask?.cancel()
+        let previous = scanTask
         scanTask = Task { [weak self] in
+            await previous?.value
             guard let self else { return }
             if rescan {
                 await scanner.rescan()
             } else {
                 await scanner.scan()
             }
-            guard !Task.isCancelled else { return }
             // The badge counts always-on clashes; focus-dependent menu overlaps are
             // not real conflicts and would only inflate the number with noise.
             statusBar.updateBadge(count: scanner.realConflictCount)

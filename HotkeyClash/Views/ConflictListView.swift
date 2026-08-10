@@ -31,6 +31,13 @@ struct ConflictListView: View {
     /// (so "shift"/"cmd" match glyph combos), app names, and actions.
     @State private var searchIndex: [Conflict.ID: [String]] = [:]
 
+    /// Focus starts on the sidebar so arrow keys work the moment the panel opens.
+    /// The list has always supported them; without focus, the first keypress was
+    /// silently swallowed and you had to click a row before the keyboard did
+    /// anything. Nothing else here asks for focus on appear, so the search field
+    /// is still one Tab or one click away.
+    @FocusState private var sidebarFocused: Bool
+
     private var rankedConflicts: [Conflict] {
         scanner.rankedConflicts
     }
@@ -127,6 +134,7 @@ struct ConflictListView: View {
                 appOverlapCount: scanner.appOverlapCount,
                 bindingCount: scanner.allBindings.count,
                 scanDuration: scanner.scanDuration,
+                lastScanDate: scanner.lastScanDate,
                 onRescan: {
                     selectedID = nil
                     debouncedQuery = ""
@@ -166,6 +174,8 @@ struct ConflictListView: View {
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
+                .focused($sidebarFocused)
+                .onAppear { sidebarFocused = true }
             }
         }
         .frame(width: 260)

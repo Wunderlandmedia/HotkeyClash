@@ -12,8 +12,14 @@ struct ResultsHeader: View {
     let appOverlapCount: Int
     let bindingCount: Int
     let scanDuration: TimeInterval
+    let lastScanDate: Date?
     let onRescan: () -> Void
     let onExport: () -> Void
+
+    /// Drives the "2m ago" text. Held here rather than read inline so the label
+    /// keeps counting up while the panel sits open, instead of freezing at
+    /// whatever it said when the view was built.
+    @State private var now = Date()
 
     var body: some View {
         HStack(spacing: 8) {
@@ -49,6 +55,15 @@ struct ResultsHeader: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
+        .task {
+            // A slow heartbeat, and only while this header is on screen. The panel
+            // is usually open for a few seconds, so this costs almost nothing.
+            while !Task.isCancelled {
+                try? await Task.sleep(for: ScanTimeFormatter.refreshInterval)
+                guard !Task.isCancelled else { return }
+                now = Date()
+            }
+        }
     }
 
     private var headline: String {
@@ -59,6 +74,12 @@ struct ResultsHeader: View {
 
     private var subhead: String {
         let overlaps = appOverlapCount == 1 ? "1 menu overlap" : "\(appOverlapCount) menu overlaps"
-        return "\(overlaps), only clash when an app is focused \u{00B7} scanned \(bindingCount) shortcuts in \(String(format: "%.1f", scanDuration))s"
+        var text = "\(overlaps), only clash when an app is focused \u{00B7} scanned \(bindingCount) shortcuts in \(String(format: "%.1f", scanDuration))s"
+        // Only ever absent on results that predate a completed scan, which the
+        // header does not show anyway, but the type is honest about it.
+        if let lastScanDate {
+            text += " \u{00B7} \(ScanTimeFormatter.relativeDescription(since: lastScanDate, now: now))"
+        }
+        return text
     }
 }

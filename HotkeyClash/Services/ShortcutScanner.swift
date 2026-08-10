@@ -32,6 +32,11 @@ final class ShortcutScanner {
     private(set) var allBindings: [HotkeyBinding] = []
     private(set) var scanDuration: TimeInterval = 0
 
+    /// When the last successful scan finished, so the header can admit how stale
+    /// the results are. Nil until one completes; a failed scan leaves the previous
+    /// timestamp alone rather than claiming a scan that produced nothing.
+    private(set) var lastScanDate: Date?
+
     private let menuBarScanner = MenuBarScanner()
     private let configFileScanner = ConfigFileScanner()
     private let systemShortcutScanner = SystemShortcutScanner()
@@ -127,7 +132,9 @@ final class ShortcutScanner {
         // 4. Combine and detect conflicts
         allBindings = bindings
         conflicts = ConflictDetector.detect(bindings: allBindings)
-        scanDuration = Date().timeIntervalSince(start)
+        let finished = Date()
+        scanDuration = finished.timeIntervalSince(start)
+        lastScanDate = finished
 
         state = .completed
         logger.info("Scan complete: \(self.allBindings.count) bindings, \(self.conflicts.count) conflicts in \(String(format: "%.1f", self.scanDuration))s")
