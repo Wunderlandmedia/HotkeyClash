@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var scanTask: Task<Void, Never>?
     private var didCompleteSetup = false
     private var workspaceWatcher: WorkspaceWatcher?
+    private let conflictNotifier = ConflictNotifier()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if !SettingsManager.shared.hasCompletedOnboarding {
@@ -127,7 +128,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 return !statusBar.isPanelVisible
             },
             onRescan: { [weak self] in
-                self?.startScan(rescan: true)
+                self?.startScan(rescan: true, notifyOnNewConflicts: true)
             }
         )
         watcher.start()
@@ -174,7 +175,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// the previous task means every request produces a real scan and a badge that
     /// matches it. Nothing can pile up here: the Rescan button is off screen while
     /// a scan runs, and the watcher debounces before it asks.
-    private func startScan(rescan: Bool) {
+    private func startScan(rescan: Bool, notifyOnNewConflicts: Bool = false) {
         let previous = scanTask
         scanTask = Task { [weak self] in
             await previous?.value
@@ -187,6 +188,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             // The badge counts always-on clashes; focus-dependent menu overlaps are
             // not real conflicts and would only inflate the number with noise.
             statusBar.updateBadge(count: scanner.realConflictCount)
+
+            // Only the background auto rescan notifies, and only about conflicts that
+            // are actually new. If the user opened the panel while the scan ran they
+            // can see the change for themselves, so there is nothing to announce.
+            if notifyOnNewConflicts,
+               SettingsManager.shared.notifyOnNewConflicts,
+               !statusBar.isPanelVisible,
+               !scanner.newConflicts.isEmpty {
+                conflictNotifier.notify(newConflicts: scanner.newConflicts)
+            }
         }
     }
 }

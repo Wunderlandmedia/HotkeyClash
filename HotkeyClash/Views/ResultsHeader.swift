@@ -10,6 +10,9 @@ struct ResultsHeader: View {
     @Binding var scope: ConflictScope
     let realConflictCount: Int
     let appOverlapCount: Int
+    /// Real conflicts that weren't in the previous scan. Zero on the first scan and
+    /// whenever a rescan surfaced nothing new; a capsule appears only when positive.
+    let newConflictCount: Int
     let bindingCount: Int
     let scanDuration: TimeInterval
     let lastScanDate: Date?
@@ -33,6 +36,9 @@ struct ResultsHeader: View {
                 Text(subhead)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+            if newConflictCount > 0 {
+                newBadge
             }
             Spacer()
             Picker("Show", selection: $scope) {
@@ -64,6 +70,19 @@ struct ResultsHeader: View {
                 now = Date()
             }
         }
+    }
+
+    /// A small "N new" capsule that calls out conflicts a rescan just turned up, so
+    /// the change registers without the user having to diff the list by eye. Only
+    /// shown when there's something new; it isn't a permanent fixture of the header.
+    private var newBadge: some View {
+        Text(newConflictCount == 1 ? "1 new" : "\(newConflictCount) new")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.orange)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 2)
+            .background(.orange.opacity(0.15), in: Capsule())
+            .help("Conflicts that appeared since the previous scan")
     }
 
     private var headline: String {

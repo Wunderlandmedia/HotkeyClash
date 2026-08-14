@@ -37,6 +37,17 @@ final class ShortcutScanner {
     /// timestamp alone rather than claiming a scan that produced nothing.
     private(set) var lastScanDate: Date?
 
+    /// Real conflicts that appeared in the latest scan but weren't in the one before
+    /// it. Drives the "N new" header hint and the opt-in notification. Empty on the
+    /// first scan of the session (no baseline yet) and after any scan that surfaced
+    /// nothing new.
+    private(set) var newConflicts: [Conflict] = []
+
+    /// The real-conflict combos from the previous scan, kept as the diff baseline.
+    /// Nil until the first scan completes, which is what makes that first run report
+    /// zero new rather than flagging everything as new.
+    private var previousConflictKeys: Set<UInt64>?
+
     private let menuBarScanner = MenuBarScanner()
     private let configFileScanner = ConfigFileScanner()
     private let systemShortcutScanner = SystemShortcutScanner()
@@ -132,6 +143,14 @@ final class ShortcutScanner {
         // 4. Combine and detect conflicts
         allBindings = bindings
         conflicts = ConflictDetector.detect(bindings: allBindings)
+
+        // Diff against the previous scan before adopting the new baseline. Only real
+        // conflicts count: menu overlaps come and go with every app launch, so
+        // treating them as "new" would cry wolf on the notification.
+        let realConflicts = conflicts.filter { $0.category == .realConflict }
+        newConflicts = ConflictDiff.newlyAppeared(previous: previousConflictKeys, current: realConflicts)
+        previousConflictKeys = Set(realConflicts.map(ConflictDiff.key(for:)))
+
         let finished = Date()
         scanDuration = finished.timeIntervalSince(start)
         lastScanDate = finished

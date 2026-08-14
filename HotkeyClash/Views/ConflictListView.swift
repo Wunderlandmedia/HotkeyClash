@@ -132,6 +132,7 @@ struct ConflictListView: View {
                 scope: $scope,
                 realConflictCount: scanner.realConflictCount,
                 appOverlapCount: scanner.appOverlapCount,
+                newConflictCount: scanner.newConflicts.count,
                 bindingCount: scanner.allBindings.count,
                 scanDuration: scanner.scanDuration,
                 lastScanDate: scanner.lastScanDate,

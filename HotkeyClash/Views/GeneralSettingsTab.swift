@@ -3,6 +3,25 @@ import SwiftUI
 struct GeneralSettingsTab: View {
     @State private var hasAccessibility = false
     private var settings: SettingsManager { .shared }
+    private let notifier = ConflictNotifier()
+
+    /// Turning this on asks for notification permission first, and only sticks if
+    /// it's granted. Off is unconditional. Written as a custom binding rather than
+    /// `Bindable` so the permission request rides the same tap that flips the switch.
+    private var notifyOnNewConflicts: Binding<Bool> {
+        Binding(
+            get: { settings.notifyOnNewConflicts },
+            set: { wantsOn in
+                guard wantsOn else {
+                    settings.notifyOnNewConflicts = false
+                    return
+                }
+                Task {
+                    settings.notifyOnNewConflicts = await notifier.requestAuthorization()
+                }
+            }
+        )
+    }
 
     var body: some View {
         ScrollView {
@@ -27,7 +46,7 @@ struct GeneralSettingsTab: View {
                             .toggleStyle(.switch)
                             .labelsHidden()
                     }
-                    SettingsRow(showDivider: false) {
+                    SettingsRow {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Rescan when apps open or quit")
                             Text("Keeps the results and the menu bar count current. Never runs while the panel is open.")
@@ -38,6 +57,19 @@ struct GeneralSettingsTab: View {
                         Toggle("Rescan when apps open or quit", isOn: Bindable(settings).autoRescanOnAppChange)
                             .toggleStyle(.switch)
                             .labelsHidden()
+                    }
+                    SettingsRow(showDivider: false) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Notify when new conflicts appear")
+                            Text("A banner when a background rescan finds a conflict that wasn't there before. Needs notification permission.")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Toggle("Notify when new conflicts appear", isOn: notifyOnNewConflicts)
+                            .toggleStyle(.switch)
+                            .labelsHidden()
+                            .disabled(!settings.autoRescanOnAppChange)
                     }
                 }
 

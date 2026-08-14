@@ -21,6 +21,7 @@ final class SettingsManager {
         static let scanSystemShortcuts = "scanSystemShortcuts"
         static let includeBackgroundApps = "includeBackgroundApps"
         static let autoRescanOnAppChange = "autoRescanOnAppChange"
+        static let notifyOnNewConflicts = "notifyOnNewConflicts"
         static let panelOriginX = "panelOriginX"
         static let panelOriginY = "panelOriginY"
         static let hasSavedPanelOrigin = "hasSavedPanelOrigin"
@@ -51,6 +52,7 @@ final class SettingsManager {
         scanSystemShortcuts = defaults.bool(forKey: Keys.scanSystemShortcuts)
         includeBackgroundApps = defaults.bool(forKey: Keys.includeBackgroundApps)
         autoRescanOnAppChange = defaults.bool(forKey: Keys.autoRescanOnAppChange)
+        notifyOnNewConflicts = defaults.bool(forKey: Keys.notifyOnNewConflicts)
     }
 
     var hasCompletedOnboarding: Bool {
@@ -109,6 +111,14 @@ final class SettingsManager {
     /// not quietly go stale. On by default: a wrong count is worse than a scan.
     var autoRescanOnAppChange: Bool {
         didSet { defaults.set(autoRescanOnAppChange, forKey: Keys.autoRescanOnAppChange) }
+    }
+
+    /// Post a notification when a background rescan turns up conflicts that weren't
+    /// there before. Off by default and needs the OS notification permission, so it
+    /// stays silent until the user asks for it (unlike the always-useful auto rescan
+    /// above, which only reads what is already on screen).
+    var notifyOnNewConflicts: Bool {
+        didSet { defaults.set(notifyOnNewConflicts, forKey: Keys.notifyOnNewConflicts) }
     }
 
     // MARK: - Panel position
