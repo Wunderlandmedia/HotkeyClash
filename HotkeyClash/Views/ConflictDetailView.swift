@@ -4,6 +4,7 @@ import SwiftUI
 /// every binding that claims it, ordered by how early it hooks the event stack.
 struct ConflictDetailView: View {
     let conflict: Conflict
+    var tester: ShortcutTester
     @State private var icons: [String: NSImage] = [:]
 
     var body: some View {
@@ -32,6 +33,8 @@ struct ConflictDetailView: View {
                 LikelyWinnerCallout(verdict: verdict)
             }
 
+            ShortcutTestCallout(conflict: conflict, tester: tester)
+
             Divider()
 
             // Binding list
@@ -40,7 +43,8 @@ struct ConflictDetailView: View {
                     BindingRow(
                         binding: binding,
                         icon: binding.ownerBundleID.flatMap { icons[$0] },
-                        isLikelyWinner: binding.id == winningBindingID
+                        isLikelyWinner: binding.id == winningBindingID,
+                        isObservedWinner: binding.id == observedWinnerID
                     )
 
                     if binding.id != sortedBindings.last?.id {
@@ -72,6 +76,12 @@ struct ConflictDetailView: View {
 
     private var winningBindingID: UUID? {
         conflict.likelyWinner?.winningBindingID
+    }
+
+    /// Set only once a live test of this conflict has named a single binding.
+    /// Every hedged verdict leaves it nil, so no row gets a seal it did not earn.
+    private var observedWinnerID: UUID? {
+        tester.verdict(for: conflict)?.confirmedBindingID
     }
 
     /// Sorted by event-stack layer so the list reads top-down in the same order

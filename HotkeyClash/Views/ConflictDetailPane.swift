@@ -8,12 +8,13 @@ import SwiftUI
 /// rendering one conflict.
 struct ConflictDetailPane: View {
     let conflict: Conflict?
+    var tester: ShortcutTester
 
     var body: some View {
         Group {
             if let conflict {
                 ScrollView {
-                    ConflictDetailView(conflict: conflict)
+                    ConflictDetailView(conflict: conflict, tester: tester)
                         .padding(20)
                         // Tie the identity to the conflict so switching selection
                         // resets scroll position instead of animating between them.

@@ -10,6 +10,9 @@ struct BindingRow: View {
     let icon: NSImage?
     /// True when the likely-winner verdict named this binding outright.
     let isLikelyWinner: Bool
+    /// True when a live test watched this binding take the key. Stronger than the
+    /// guess, so when both are true only this one is shown.
+    let isObservedWinner: Bool
 
     private var layer: HotkeyLayer { HotkeyLayer.classify(binding) }
 
@@ -23,7 +26,13 @@ struct BindingRow: View {
                     Text(binding.ownerName)
                         .font(.subheadline.weight(.semibold))
 
-                    if isLikelyWinner {
+                    if isObservedWinner {
+                        Label("Observed winner", systemImage: "checkmark.seal.fill")
+                            .labelStyle(.iconOnly)
+                            .font(.caption)
+                            .foregroundStyle(.blue)
+                            .help("A live test watched this one take the key")
+                    } else if isLikelyWinner {
                         Label("Likely winner", systemImage: "checkmark.seal.fill")
                             .labelStyle(.iconOnly)
                             .font(.caption)

@@ -9,6 +9,10 @@ import UniformTypeIdentifiers
 /// them together: filtering the list, keeping a sane selection, and exporting.
 struct ConflictListView: View {
     var scanner: ShortcutScanner
+    /// Owned by the app delegate rather than this view, because a live test needs
+    /// to hand focus back to the app the panel opened over, and only the delegate
+    /// knows what that was.
+    var tester: ShortcutTester
 
     @State private var selectedID: Conflict.ID?
 
@@ -112,6 +116,12 @@ struct ConflictListView: View {
             // not on every keystroke.
             rebuildSearchIndex()
         }
+        .onChange(of: selectedID) {
+            // A test is bound to the combo it started on, so moving to another row
+            // abandons it rather than leaving it listening for a key the user is no
+            // longer looking at.
+            tester.cancelIfListening()
+        }
         .onChange(of: filteredConflicts) {
             // Real conflicts pin to the top, app overlaps follow, and the search
             // filter narrows the list. Keep the selection on a visible row as
@@ -147,7 +157,7 @@ struct ConflictListView: View {
             HStack(spacing: 0) {
                 sidebarList
                 Divider()
-                ConflictDetailPane(conflict: selectedConflict)
+                ConflictDetailPane(conflict: selectedConflict, tester: tester)
             }
         }
     }

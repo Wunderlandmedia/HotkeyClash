@@ -133,7 +133,24 @@ final class StatusBarController {
         }
     }
 
+    /// Stops the panel dismissing itself while a shortcut test is running.
+    ///
+    /// Normally a click anywhere outside the panel closes it, which is right for
+    /// every other situation and exactly wrong for this one: testing a shortcut in
+    /// a particular app means clicking into that app first, and the panel has to
+    /// still be there afterwards to report what happened.
+    func setDismissSuspended(_ suspended: Bool) {
+        if suspended {
+            stopEventMonitor()
+        } else if panel?.isVisible == true {
+            startEventMonitor()
+        }
+    }
+
     private func startEventMonitor() {
+        // Resuming can be asked for more than once, and monitors do not deduplicate
+        // themselves, so make sure the old pair is gone before adding a new one.
+        stopEventMonitor()
         eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
             self?.hidePopover()
         }

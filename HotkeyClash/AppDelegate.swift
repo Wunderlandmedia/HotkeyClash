@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var didCompleteSetup = false
     private var workspaceWatcher: WorkspaceWatcher?
     private let conflictNotifier = ConflictNotifier()
+    private var shortcutTester: ShortcutTester!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if !SettingsManager.shared.hasCompletedOnboarding {
@@ -65,7 +66,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         statusBar = StatusBarController()
 
-        let contentView = ConflictListView(scanner: scanner)
+        // The tester has two dependencies that only live out here: which app the
+        // panel opened over (it hands focus back so the test happens somewhere
+        // realistic), and the panel's click-outside dismissal, which has to stand
+        // down while the user clicks into another app to press the key.
+        shortcutTester = ShortcutTester(
+            appToRestore: { [weak self] in self?.statusBar.previousApp },
+            onListeningChanged: { [weak self] isListening in
+                self?.statusBar.setDismissSuspended(isListening)
+            }
+        )
+
+        let contentView = ConflictListView(scanner: scanner, tester: shortcutTester)
         statusBar.setup(with: contentView)
 
         let settings = SettingsManager.shared
@@ -109,6 +121,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         workspaceWatcher?.stop()
+        shortcutTester?.cancel()
         HotKeyManager.shared.unregister()
     }
 
