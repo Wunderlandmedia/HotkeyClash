@@ -18,6 +18,10 @@ nonisolated struct HotkeyBinding: Identifiable, Hashable {
         case menuBar
         case configFile
         case systemShortcut
+        /// A Carbon global hotkey an app registered for itself. Right now that is
+        /// only HotkeyClash's own panel shortcut, which used to be the one binding
+        /// on the machine the app was blind to.
+        case globalHotkey
     }
 
     init(

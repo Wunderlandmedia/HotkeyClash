@@ -199,6 +199,19 @@ enum ShortcutFormatter {
         return reservedCombos.contains { $0.keyCode == keyCode && $0.modifiers == mods }
     }
 
+    /// The inverse of `carbonModifiers(from:)`. Settings stores the global shortcut
+    /// in Carbon's masks because that is what `RegisterEventHotKey` wants, and the
+    /// rest of the app speaks `NSEvent.ModifierFlags`, so the trip back has to
+    /// exist somewhere. Here, next to its opposite number.
+    static func modifierFlags(from carbonModifiers: UInt32) -> NSEvent.ModifierFlags {
+        var flags: NSEvent.ModifierFlags = []
+        if carbonModifiers & UInt32(cmdKey) != 0 { flags.insert(.command) }
+        if carbonModifiers & UInt32(shiftKey) != 0 { flags.insert(.shift) }
+        if carbonModifiers & UInt32(optionKey) != 0 { flags.insert(.option) }
+        if carbonModifiers & UInt32(controlKey) != 0 { flags.insert(.control) }
+        return flags
+    }
+
     static func carbonModifiers(from flags: NSEvent.ModifierFlags) -> UInt32 {
         var result: UInt32 = 0
         if flags.contains(.command) { result |= UInt32(cmdKey) }

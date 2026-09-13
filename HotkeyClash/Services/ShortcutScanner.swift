@@ -51,6 +51,7 @@ final class ShortcutScanner {
     private let menuBarScanner = MenuBarScanner()
     private let configFileScanner = ConfigFileScanner()
     private let systemShortcutScanner = SystemShortcutScanner()
+    private let ownShortcutScanner = OwnShortcutScanner()
 
     /// Number of always-on clashes (involve a global hotkey). The actionable count,
     /// used for the summary verdict and the menu bar badge.
@@ -140,7 +141,14 @@ final class ShortcutScanner {
             bindings += await menuBarScanner.scan(includeBackgroundApps: includeBackgroundApps)
         }
 
-        // 4. Combine and detect conflicts
+        // 4. Our own panel shortcut. No toggle and no source to read: it is a live
+        // Carbon registration we made ourselves, and it clashes like any other.
+        bindings += ownShortcutScanner.scan(
+            keyCode: settings.globalShortcutKeyCode,
+            carbonModifiers: settings.globalShortcutModifiers
+        )
+
+        // 5. Combine and detect conflicts
         allBindings = bindings
         conflicts = ConflictDetector.detect(bindings: allBindings)
 

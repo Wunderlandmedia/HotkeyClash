@@ -112,6 +112,7 @@ enum ConflictReport {
         case .menuBar: "Menu Bar"
         case .configFile: "Config"
         case .systemShortcut: "System"
+        case .globalHotkey: "Global Hotkey"
         }
     }
 

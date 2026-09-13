@@ -20,10 +20,11 @@ struct Conflict: Identifiable, Equatable {
     }
 
     /// Classifies severity based on how many bindings come from global sources.
-    /// Two or more global sources (config files or system shortcuts) means a definite clash.
+    /// Two or more global sources (config files, system shortcuts, or a registered
+    /// global hotkey) means a definite clash.
     /// Otherwise it is a potential clash (global vs per-app menu item).
     var severity: Severity {
-        let globalSources: Set<HotkeyBinding.BindingSource> = [.configFile, .systemShortcut]
+        let globalSources: Set<HotkeyBinding.BindingSource> = [.configFile, .systemShortcut, .globalHotkey]
         let globalCount = bindings.filter { globalSources.contains($0.source) }.count
         return globalCount >= 2 ? .definite : .potential
     }
@@ -44,7 +45,7 @@ struct Conflict: Identifiable, Equatable {
     /// This is the source-based distinction that decides real clashes from menu noise,
     /// independent of how many apps happen to share the combo.
     var category: ClashCategory {
-        let globalSources: Set<HotkeyBinding.BindingSource> = [.configFile, .systemShortcut]
+        let globalSources: Set<HotkeyBinding.BindingSource> = [.configFile, .systemShortcut, .globalHotkey]
         return bindings.contains { globalSources.contains($0.source) } ? .realConflict : .appOverlap
     }
 

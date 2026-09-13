@@ -79,6 +79,7 @@ struct BindingRow: View {
         case .menuBar: "menubar.rectangle"
         case .configFile: "doc.text"
         case .systemShortcut: "gearshape"
+        case .globalHotkey: "command.circle"
         }
     }
 
@@ -117,6 +118,7 @@ struct BindingRow: View {
         case .menuBar: "Menu Bar"
         case .configFile: "Config"
         case .systemShortcut: "System"
+        case .globalHotkey: "Global Hotkey"
         }
     }
 
@@ -125,6 +127,7 @@ struct BindingRow: View {
         case .menuBar: .blue
         case .configFile: .purple
         case .systemShortcut: .orange
+        case .globalHotkey: .teal
         }
     }
 }

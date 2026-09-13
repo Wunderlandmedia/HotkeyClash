@@ -46,6 +46,7 @@ nonisolated enum HotkeyLayer: Int, CaseIterable, Comparable, Sendable {
         switch binding.source {
         case .systemShortcut: .system
         case .menuBar: .menuItem
+        case .globalHotkey: .globalHotKey
         case .configFile: configFileLayer(for: binding)
         }
     }
