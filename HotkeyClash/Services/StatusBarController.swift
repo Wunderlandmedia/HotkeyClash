@@ -7,6 +7,10 @@ final class StatusBarController {
     private var panel: FloatingPanel!
     private var eventMonitor: Any?
     private var localEventMonitor: Any?
+    /// True while a shortcut test is running. Kept as state because the pin toggle
+    /// can ask us to rewire the monitors at any moment, and a test in progress
+    /// outranks whatever the pin says.
+    private var dismissSuspended = false
     private(set) var previousApp: NSRunningApplication?
 
     func setup(with contentView: some View) {
@@ -140,6 +144,7 @@ final class StatusBarController {
     /// a particular app means clicking into that app first, and the panel has to
     /// still be there afterwards to report what happened.
     func setDismissSuspended(_ suspended: Bool) {
+        dismissSuspended = suspended
         if suspended {
             stopEventMonitor()
         } else if panel?.isVisible == true {
@@ -147,12 +152,24 @@ final class StatusBarController {
         }
     }
 
+    /// Re-reads the pin setting and rewires the monitors to match, for when the user
+    /// flips it while the panel is open.
+    func refreshDismissBehavior() {
+        guard panel?.isVisible == true, !dismissSuspended else { return }
+        startEventMonitor()
+    }
+
     private func startEventMonitor() {
         // Resuming can be asked for more than once, and monitors do not deduplicate
         // themselves, so make sure the old pair is gone before adding a new one.
         stopEventMonitor()
-        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            self?.hidePopover()
+        // Escape always closes the panel. The click-outside monitor is the part the
+        // pin turns off: a pinned panel is one the user wants to keep reading while
+        // they work in the app that owns the clashing shortcut.
+        if !SettingsManager.shared.keepPanelOpen {
+            eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+                self?.hidePopover()
+            }
         }
         localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.keyCode == 53 {
@@ -179,6 +196,7 @@ extension Notification.Name {
     static let openSettings = Notification.Name("openSettings")
     static let triggerRescan = Notification.Name("triggerRescan")
     static let dismissPanel = Notification.Name("dismissPanel")
+    static let panelPinChanged = Notification.Name("panelPinChanged")
 }
 
 final class FloatingPanel: NSPanel {

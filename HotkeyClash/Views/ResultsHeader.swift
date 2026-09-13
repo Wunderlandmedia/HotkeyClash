@@ -16,6 +16,8 @@ struct ResultsHeader: View {
     let bindingCount: Int
     let scanDuration: TimeInterval
     let lastScanDate: Date?
+    /// Whether the panel stays put when the user clicks into another app.
+    @Binding var isPinned: Bool
     let onRescan: () -> Void
     let onExport: () -> Void
 
@@ -51,6 +53,15 @@ struct ResultsHeader: View {
             .controlSize(.small)
             .fixedSize()
             .help("Choose which conflicts the list shows")
+            Toggle(isOn: $isPinned) {
+                Label("Keep panel open", systemImage: isPinned ? "pin.fill" : "pin")
+                    .labelStyle(.iconOnly)
+            }
+            .toggleStyle(.button)
+            .controlSize(.small)
+            .help(isPinned
+                  ? "Panel stays open until you press Escape or click the menu bar icon"
+                  : "Keep the panel open when you click into another app")
             Button("Export", systemImage: "square.and.arrow.up", action: onExport)
                 .buttonStyle(.bordered)
                 .controlSize(.small)

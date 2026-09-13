@@ -109,6 +109,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             object: nil
         )
 
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handlePanelPinChanged),
+            name: .panelPinChanged,
+            object: nil
+        )
+
         startWorkspaceWatcher()
 
         // Scan on launch if enabled and AX permission is granted
@@ -137,8 +144,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 // A scan that cannot read app menus would come back with less than
                 // the results already on screen, which is worse than being stale.
                 guard AccessibilityService.checkPermission() else { return false }
-                // Never rebuild the list out from under someone reading it.
-                return !statusBar.isPanelVisible
+                // Never rebuild the list out from under someone reading it. A
+                // pinned panel is the exception: it can sit there for hours, so
+                // refusing to scan would leave it permanently stale. Once the user
+                // has switched to another app they are not reading it, and a fresh
+                // list is worth more than a frozen one.
+                guard statusBar.isPanelVisible else { return true }
+                return SettingsManager.shared.keepPanelOpen && !NSApp.isActive
             },
             onRescan: { [weak self] in
                 self?.startScan(rescan: true, notifyOnNewConflicts: true)
@@ -174,6 +186,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     @objc private func handleDismissPanel() {
         statusBar.hidePopover()
+    }
+
+    @objc private func handlePanelPinChanged() {
+        statusBar.refreshDismissBehavior()
     }
 
     /// Runs a scan and then refreshes the menu bar badge, queueing behind any scan

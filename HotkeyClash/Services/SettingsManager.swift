@@ -22,6 +22,7 @@ final class SettingsManager {
         static let includeBackgroundApps = "includeBackgroundApps"
         static let autoRescanOnAppChange = "autoRescanOnAppChange"
         static let notifyOnNewConflicts = "notifyOnNewConflicts"
+        static let keepPanelOpen = "keepPanelOpen"
         static let panelOriginX = "panelOriginX"
         static let panelOriginY = "panelOriginY"
         static let hasSavedPanelOrigin = "hasSavedPanelOrigin"
@@ -53,6 +54,7 @@ final class SettingsManager {
         includeBackgroundApps = defaults.bool(forKey: Keys.includeBackgroundApps)
         autoRescanOnAppChange = defaults.bool(forKey: Keys.autoRescanOnAppChange)
         notifyOnNewConflicts = defaults.bool(forKey: Keys.notifyOnNewConflicts)
+        keepPanelOpen = defaults.bool(forKey: Keys.keepPanelOpen)
     }
 
     var hasCompletedOnboarding: Bool {
@@ -119,6 +121,18 @@ final class SettingsManager {
     /// above, which only reads what is already on screen).
     var notifyOnNewConflicts: Bool {
         didSet { defaults.set(notifyOnNewConflicts, forKey: Keys.notifyOnNewConflicts) }
+    }
+
+    /// Keep the panel on screen when the user clicks into another app, instead of
+    /// dismissing it the way a popover would.
+    ///
+    /// Off by default, because a menu bar panel that will not go away is a
+    /// surprise. But the panel is a reference you read *while* you go and fix the
+    /// clash in the offending app, and clicking into that app is exactly what made
+    /// it vanish. Pinned, it closes on Escape or on the menu bar icon, and nothing
+    /// else.
+    var keepPanelOpen: Bool {
+        didSet { defaults.set(keepPanelOpen, forKey: Keys.keepPanelOpen) }
     }
 
     // MARK: - Panel position

@@ -42,6 +42,19 @@ struct ConflictListView: View {
     /// is still one Tab or one click away.
     @FocusState private var sidebarFocused: Bool
 
+    /// The pin lives in settings so it survives a relaunch, and the panel has to be
+    /// told the moment it changes: the click-outside monitor is already installed by
+    /// then and will not re-read the setting on its own.
+    private var panelPinned: Binding<Bool> {
+        Binding(
+            get: { SettingsManager.shared.keepPanelOpen },
+            set: { pinned in
+                SettingsManager.shared.keepPanelOpen = pinned
+                NotificationCenter.default.post(name: .panelPinChanged, object: nil)
+            }
+        )
+    }
+
     private var rankedConflicts: [Conflict] {
         scanner.rankedConflicts
     }
@@ -146,6 +159,7 @@ struct ConflictListView: View {
                 bindingCount: scanner.allBindings.count,
                 scanDuration: scanner.scanDuration,
                 lastScanDate: scanner.lastScanDate,
+                isPinned: panelPinned,
                 onRescan: {
                     selectedID = nil
                     debouncedQuery = ""
