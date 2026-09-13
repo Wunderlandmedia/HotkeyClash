@@ -41,10 +41,13 @@ nonisolated struct HotkeyBinding: Identifiable, Hashable {
         self.source = source
     }
 
-    /// Strips device-specific flags, keeping only the four standard modifiers.
+    /// Strips device-specific flags, keeping the four standard modifiers plus Globe.
     /// Used for grouping bindings by key combo regardless of capsLock, numericPad, etc.
+    ///
+    /// Globe has to survive the strip or it is not a modifier at all: Globe+E would
+    /// group with a plain E and report a clash that nobody can trigger.
     var normalizedModifiers: NSEvent.ModifierFlags {
-        modifiers.intersection([.command, .option, .shift, .control])
+        modifiers.intersection([.command, .option, .shift, .control, .function])
     }
 
     // MARK: - Hashable

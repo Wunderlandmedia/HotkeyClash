@@ -80,6 +80,9 @@ nonisolated enum AccessibilityService {
     /// - `0x02` = Option
     /// - `0x04` = Control
     /// - `0x08` = no Command (rare, means Command is NOT included)
+    /// - `0x10` = Globe (fn). Undocumented, but that is what TextEdit's
+    ///   "Emoji & Symbols" reports: char "E" with modifiers 24, which is
+    ///   0x08 (no Command) plus 0x10.
     ///
     /// Returns nil if the menu item has no shortcut assigned.
     static func getMenuItemShortcut(from menuItem: AXUIElement) -> (character: String, modifiers: Int)? {
@@ -100,6 +103,12 @@ nonisolated enum AccessibilityService {
     ///
     /// In AX menu items, Command is **always implied** unless the `0x08` flag is set
     /// (which explicitly excludes Command, though this is rare).
+    ///
+    /// The `0x10` Globe bit is the one that bit us. Ignoring it turned Globe+E into
+    /// a bare "E", which is not just wrong on screen: a bare key groups with every
+    /// other bare key, so the app invented conflicts that do not exist. Reported as
+    /// issue #5 by a user on a non-Apple keyboard, where the distinction between fn
+    /// and Globe is not academic.
     static func convertAXModifiers(_ axMods: Int) -> NSEvent.ModifierFlags {
         var flags: NSEvent.ModifierFlags = []
 
@@ -110,6 +119,7 @@ nonisolated enum AccessibilityService {
         if axMods & 0x01 != 0 { flags.insert(.shift) }
         if axMods & 0x02 != 0 { flags.insert(.option) }
         if axMods & 0x04 != 0 { flags.insert(.control) }
+        if axMods & 0x10 != 0 { flags.insert(.function) }
 
         return flags
     }

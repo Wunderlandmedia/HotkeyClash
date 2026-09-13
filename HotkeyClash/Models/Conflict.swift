@@ -65,19 +65,13 @@ struct Conflict: Identifiable, Equatable {
 
     /// Human-readable display string for the key combo (e.g. "\u{2318}\u{21E7}G").
     var displayString: String {
-        ShortcutFormatter.displayString(
-            keyCode: UInt32(keyCode),
-            carbonModifiers: ShortcutFormatter.carbonModifiers(from: modifiers)
-        )
+        ShortcutFormatter.displayString(keyCode: UInt32(keyCode), modifiers: modifiers)
     }
 
     /// Spelled-out, lowercased combo text for filtering (e.g. "command cmd shift g"),
     /// so a query like "shift" or "cmd" matches a combo shown only as glyphs.
     var searchableText: String {
-        ShortcutFormatter.searchableString(
-            keyCode: UInt32(keyCode),
-            carbonModifiers: ShortcutFormatter.carbonModifiers(from: modifiers)
-        )
+        ShortcutFormatter.searchableString(keyCode: UInt32(keyCode), modifiers: modifiers)
     }
 
     init(keyCode: UInt16, modifiers: NSEvent.ModifierFlags, bindings: [HotkeyBinding]) {

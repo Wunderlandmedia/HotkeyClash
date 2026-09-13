@@ -65,6 +65,30 @@ final class HotKeyManager {
 }
 
 enum ShortcutFormatter {
+
+    /// How the Globe key is written out. Apple draws a globe icon; we have a plain
+    /// string to fill, and the project does not put emoji in the UI, so the word it
+    /// is. "Globe E" also matches how people say it out loud.
+    static let globeLabel = "Globe"
+
+    /// Display form for a combo held as Cocoa flags, which is the only shape that
+    /// can carry Globe. Carbon has no mask for it, so the mask-based overload below
+    /// physically cannot express these combos.
+    static func displayString(keyCode: UInt32, modifiers: NSEvent.ModifierFlags) -> String {
+        let rest = displayString(keyCode: keyCode, carbonModifiers: carbonModifiers(from: modifiers))
+        guard modifiers.contains(.function) else { return rest }
+        return "\(globeLabel) \(rest)"
+    }
+
+    /// Searchable form for a combo held as Cocoa flags. Adds the Globe synonyms a
+    /// user is likely to type, including "fn", which is what the key says on most
+    /// third-party keyboards.
+    static func searchableString(keyCode: UInt32, modifiers: NSEvent.ModifierFlags) -> String {
+        let rest = searchableString(keyCode: keyCode, carbonModifiers: carbonModifiers(from: modifiers))
+        guard modifiers.contains(.function) else { return rest }
+        return "globe fn function \(rest)"
+    }
+
     static func displayString(keyCode: UInt32, carbonModifiers: UInt32) -> String {
         var parts: [String] = []
         if carbonModifiers & UInt32(controlKey) != 0 { parts.append("\u{2303}") }
