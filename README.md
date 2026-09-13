@@ -30,8 +30,11 @@ Open-source macOS menu bar utility that scans running apps, config files, and sy
 - Reads macOS system shortcuts (Spotlight, Mission Control, Screenshots, etc.)
 - Classifies conflicts as definite (global vs global) or potential (menu vs menu)
 - Tells you which shortcut most likely wins, based on where each one hooks the keyboard
+- Watches a real keypress and reports which app actually caught it
 - Search by app, action, or key combo, and export the whole report as Markdown
-- 720x520 split view: conflict sidebar + detail pane with app icons and source badges
+- 800x580 split view: conflict sidebar + detail pane with app icons and source badges
+- Pin the panel open so it stays put while you go and fix the clash
+- Reads Globe (fn) shortcuts, and lists its own hotkey rather than pretending it has none
 - Zero external dependencies. Pure Apple frameworks.
 
 ## Install
@@ -92,7 +95,7 @@ A conflict list tells you two things claim the same keys. It does not tell you w
 | Driver | Karabiner-Elements | First, before macOS |
 | Event tap | skhd, BetterTouchTool, Keyboard Maestro | Ahead of the system's own shortcuts |
 | System | macOS symbolic hotkeys | Before any app-level hotkey |
-| Global hotkey | Hammerspoon, Alfred | System wide, if nothing above took it |
+| Global hotkey | Hammerspoon, Alfred, HotkeyClash itself | System wide, if nothing above took it |
 | Menu item | The frontmost app | Last, and only when that app is focused |
 
 The lowest layer usually wins, and that is the one HotkeyClash marks. When two tools sit on the same layer it says so instead of guessing, because the tiebreaker is registration order and no config file on disk records it.
@@ -101,10 +104,13 @@ Accessibility permission is required to scan running apps. Config files and syst
 
 ## Planned
 
-- Hammerspoon, Alfred, Raycast parsers
-- Real-time "test this shortcut" mode (press a combo, see which app catches it)
-- Export conflict report as Markdown
-- Auto-rescan on app launch/quit
+- Scoped search, so a query can target the app, the action, or the key combo alone
+- Obsidian and other command-palette apps that keep shortcuts outside the menu bar
+- Background monitoring: notice when another app steals a shortcut, without being asked
+
+Raycast is not on the list. Its store is encrypted (SQLCipher, key in the login
+keychain) and its preferences carry no key data, so there is nothing a parser can
+read. The live keypress test is the honest answer for Raycast users.
 
 ## Star History
 
