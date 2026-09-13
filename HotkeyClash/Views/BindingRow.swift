@@ -19,7 +19,7 @@ struct BindingRow: View {
     var body: some View {
         HStack(spacing: 10) {
             appIcon
-                .frame(width: 28, height: 28)
+                .frame(width: 32, height: 32)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
@@ -29,20 +29,20 @@ struct BindingRow: View {
                     if isObservedWinner {
                         Label("Observed winner", systemImage: "checkmark.seal.fill")
                             .labelStyle(.iconOnly)
-                            .font(.caption)
+                            .font(.footnote)
                             .foregroundStyle(.blue)
                             .help("A live test watched this one take the key")
                     } else if isLikelyWinner {
                         Label("Likely winner", systemImage: "checkmark.seal.fill")
                             .labelStyle(.iconOnly)
-                            .font(.caption)
+                            .font(.footnote)
                             .foregroundStyle(.green)
                             .help("Most likely to receive this key")
                     }
                 }
 
                 Text(binding.action)
-                    .font(.caption)
+                    .font(.footnote)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
@@ -55,7 +55,7 @@ struct BindingRow: View {
             }
             badge(sourceLabel, tint: sourceColor)
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
     }
 
     // MARK: - Icon
@@ -68,7 +68,7 @@ struct BindingRow: View {
                 .aspectRatio(contentMode: .fit)
         } else {
             Image(systemName: fallbackIconName)
-                .font(.system(size: 16))
+                .font(.system(size: 18))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -96,9 +96,9 @@ struct BindingRow: View {
 
     private func badge(_ text: String, tint: Color) -> some View {
         Text(text)
-            .font(.caption2.weight(.medium))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
+            .font(.caption.weight(.medium))
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
             .foregroundStyle(tint)
             .background(tint.opacity(0.12), in: Capsule())
     }

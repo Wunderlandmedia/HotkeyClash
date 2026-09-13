@@ -11,17 +11,17 @@ struct LikelyWinnerCallout: View {
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: iconName)
-                .font(.caption)
+                .font(.footnote)
                 .foregroundStyle(tint)
                 .padding(.top, 1)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(headline)
-                    .font(.caption.weight(.semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(tint)
 
                 Text(verdict.summary)
-                    .font(.caption)
+                    .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

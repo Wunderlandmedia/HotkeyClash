@@ -35,7 +35,7 @@ struct IdleView: View {
             .controlSize(.large)
             // Set expectations up front so the permission prompt isn't a surprise.
             Text("Accessibility permission is needed to read app menu shortcuts.")
-                .font(.caption)
+                .font(.footnote)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)

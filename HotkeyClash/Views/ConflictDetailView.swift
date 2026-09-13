@@ -24,7 +24,7 @@ struct ConflictDetailView: View {
                         .font(.subheadline.weight(.medium))
 
                     Text(severityLabel)
-                        .font(.caption)
+                        .font(.footnote)
                         .foregroundStyle(conflict.severity.tint)
                 }
             }
@@ -49,7 +49,7 @@ struct ConflictDetailView: View {
 
                     if binding.id != sortedBindings.last?.id {
                         Divider()
-                            .padding(.leading, 38)
+                            .padding(.leading, 42)
                     }
                 }
             }
@@ -58,7 +58,7 @@ struct ConflictDetailView: View {
 
             // Explanation
             Text("Ordered by where each shortcut hooks the keyboard: driver remaps first, then event taps, system shortcuts, global hotkeys, and finally app menus. Registration order breaks ties, and nothing on disk records it.")
-                .font(.caption)
+                .font(.footnote)
                 .foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }

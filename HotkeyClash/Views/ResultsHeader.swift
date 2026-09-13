@@ -36,7 +36,7 @@ struct ResultsHeader: View {
                 Text(headline)
                     .font(.subheadline.weight(.semibold))
                 Text(subhead)
-                    .font(.caption)
+                    .font(.footnote)
                     .foregroundStyle(.secondary)
             }
             if newConflictCount > 0 {
@@ -88,7 +88,7 @@ struct ResultsHeader: View {
     /// shown when there's something new; it isn't a permanent fixture of the header.
     private var newBadge: some View {
         Text(newConflictCount == 1 ? "1 new" : "\(newConflictCount) new")
-            .font(.caption.weight(.semibold))
+            .font(.footnote.weight(.semibold))
             .foregroundStyle(.orange)
             .padding(.horizontal, 7)
             .padding(.vertical, 2)

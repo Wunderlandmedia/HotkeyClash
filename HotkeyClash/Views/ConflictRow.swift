@@ -6,13 +6,13 @@ struct ConflictRow: View {
     var body: some View {
         HStack(spacing: 8) {
             Text(conflict.displayString)
-                .font(.system(.caption, design: .monospaced).weight(.medium))
+                .font(.system(.footnote, design: .monospaced).weight(.medium))
                 .padding(.horizontal, 6)
                 .padding(.vertical, 3)
                 .background(.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 5))
 
             Text(clashDescription)
-                .font(.caption)
+                .font(.footnote)
                 .foregroundStyle(.primary)
                 .lineLimit(1)
 
@@ -20,10 +20,10 @@ struct ConflictRow: View {
 
             // Shape differs by severity so it reads without relying on color alone.
             Image(systemName: conflict.severity.symbolName)
-                .font(.system(size: 9))
+                .font(.system(size: 10))
                 .foregroundStyle(conflict.severity.tint)
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 7)
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(conflict.displayString), \(conflict.severity.accessibilityDescription), \(clashDescription)")

@@ -211,7 +211,7 @@ struct ConflictListView: View {
                 .onAppear { sidebarFocused = true }
             }
         }
-        .frame(width: 260)
+        .frame(width: 285)
     }
 
     /// Renders the current conflicts to Markdown and writes them to a user-chosen
