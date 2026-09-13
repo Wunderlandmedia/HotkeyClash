@@ -118,7 +118,7 @@ enum ShortcutFormatter {
         switch keyCode {
         case 0x24: "return enter"
         case 0x30: "tab"
-        case 0x31: "space"
+        case 0x31: "space spacebar"
         case 0x33: "delete backspace"
         case 0x35: "escape esc"
         case 0x7B: "left arrow"

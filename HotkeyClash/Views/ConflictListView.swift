@@ -187,7 +187,15 @@ struct ConflictListView: View {
                     // failed search, so say so instead of showing the search state.
                     ContentUnavailableView(scope.emptyMessage, systemImage: "checkmark.circle")
                 } else {
-                    ContentUnavailableView.search(text: debouncedQuery)
+                    // The stock search placeholder says "no results" and leaves the
+                    // user guessing. Nine times out of ten the shortcut they looked
+                    // for exists and simply is not clashing, so say that here: this
+                    // is the screen where the misunderstanding actually surfaces.
+                    ContentUnavailableView {
+                        Label("No conflicts match \"\(debouncedQuery)\"", systemImage: "magnifyingglass")
+                    } description: {
+                        Text("This list shows conflicts only, not every shortcut on your Mac. A shortcut that nothing else claims will not appear here.")
+                    }
                 }
             } else {
                 // A List with a selection binding gives keyboard navigation, type
