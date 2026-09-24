@@ -15,11 +15,9 @@
   <a href="https://www.producthunt.com/products/hotkeyclash?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-hotkeyclash" target="_blank" rel="noopener noreferrer"><img alt="HotkeyClash - Find where your Mac keyboard shortcuts clash | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1178712&amp;theme=light&amp;t=1782223133628"></a>
 </p>
 
-<!--
 <p align="center">
-  <img src=".github/assets/screenshot.png" alt="HotkeyClash screenshot" width="680">
+  <img src=".github/assets/hotkeyclash.gif" alt="HotkeyClash scanning for shortcut conflicts" width="680">
 </p>
--->
 
 Open-source macOS menu bar utility that scans running apps, config files, and system shortcuts to detect keyboard shortcut conflicts. Master-detail split view shows every clash at a glance.
 
