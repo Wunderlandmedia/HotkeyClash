@@ -17,18 +17,18 @@ struct ConflictSearchField: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
-                .font(.footnote)
+                .scaledFont(.callout)
                 .foregroundStyle(.secondary)
             TextField("Filter by app, action, or key (e.g. shift, cmd c)", text: $text)
                 .textFieldStyle(.plain)
-                .font(.footnote)
+                .scaledFont(.body)
             // Only show the clear button once there's something to clear.
             if !text.isEmpty {
                 Button {
                     text = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.footnote)
+                        .scaledFont(.callout)
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)

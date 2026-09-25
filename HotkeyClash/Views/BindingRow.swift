@@ -13,36 +13,39 @@ struct BindingRow: View {
     /// True when a live test watched this binding take the key. Stronger than the
     /// guess, so when both are true only this one is shown.
     let isObservedWinner: Bool
+    /// The icon grows with the text, so a row at Largest is not huge text beside
+    /// a postage stamp.
+    @Environment(\.panelTextScale) private var textScale
 
     private var layer: HotkeyLayer { HotkeyLayer.classify(binding) }
 
     var body: some View {
         HStack(spacing: 10) {
             appIcon
-                .frame(width: 32, height: 32)
+                .frame(width: 32 * textScale, height: 32 * textScale)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(binding.ownerName)
-                        .font(.subheadline.weight(.semibold))
+                        .scaledFont(.body, weight: .semibold)
 
                     if isObservedWinner {
                         Label("Observed winner", systemImage: "checkmark.seal.fill")
                             .labelStyle(.iconOnly)
-                            .font(.footnote)
+                            .scaledFont(.callout)
                             .foregroundStyle(.blue)
                             .help("A live test watched this one take the key")
                     } else if isLikelyWinner {
                         Label("Likely winner", systemImage: "checkmark.seal.fill")
                             .labelStyle(.iconOnly)
-                            .font(.footnote)
+                            .scaledFont(.callout)
                             .foregroundStyle(.green)
                             .help("Most likely to receive this key")
                     }
                 }
 
                 Text(binding.action)
-                    .font(.footnote)
+                    .scaledFont(.callout)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
@@ -68,7 +71,7 @@ struct BindingRow: View {
                 .aspectRatio(contentMode: .fit)
         } else {
             Image(systemName: fallbackIconName)
-                .font(.system(size: 18))
+                .scaledFont(size: 18)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -96,7 +99,7 @@ struct BindingRow: View {
 
     private func badge(_ text: String, tint: Color) -> some View {
         Text(text)
-            .font(.caption.weight(.medium))
+            .scaledFont(.subheadline, weight: .medium)
             .padding(.horizontal, 7)
             .padding(.vertical, 3)
             .foregroundStyle(tint)

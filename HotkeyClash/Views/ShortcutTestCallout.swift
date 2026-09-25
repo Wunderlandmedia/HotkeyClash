@@ -42,14 +42,14 @@ struct ShortcutTestCallout: View {
     private var prompt: some View {
         HStack(alignment: .center, spacing: 8) {
             Image(systemName: "wave.3.right")
-                .font(.footnote)
+                .scaledFont(.callout)
                 .foregroundStyle(.secondary)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("Not sure? Watch a real keypress")
-                    .font(.footnote.weight(.semibold))
+                    .scaledFont(.callout, weight: .semibold)
                 Text("HotkeyClash steps out of the way, you press \(conflict.displayString), and it reports what happened to the key.")
-                    .font(.footnote)
+                    .scaledFont(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -64,12 +64,12 @@ struct ShortcutTestCallout: View {
     private func unavailable(_ reason: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "exclamationmark.triangle")
-                .font(.footnote)
+                .scaledFont(.callout)
                 .foregroundStyle(.orange)
                 .padding(.top, 1)
 
             Text(reason)
-                .font(.footnote)
+                .scaledFont(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -87,9 +87,9 @@ struct ShortcutTestCallout: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("Listening. Press \(conflict.displayString) now.")
-                    .font(.footnote.weight(.semibold))
+                    .scaledFont(.callout, weight: .semibold)
                 Text("Focus went back to the app you were in. Click into a different one first if you want to test it there. \(secondsRemaining)s left.")
-                    .font(.footnote)
+                    .scaledFont(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -104,23 +104,23 @@ struct ShortcutTestCallout: View {
     private func finished(verdict: ShortcutTestVerdict) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: verdict.iconName)
-                .font(.footnote)
+                .scaledFont(.callout)
                 .foregroundStyle(tint(for: verdict.tone))
                 .padding(.top, 1)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(verdict.headline)
-                    .font(.footnote.weight(.semibold))
+                    .scaledFont(.callout, weight: .semibold)
                     .foregroundStyle(tint(for: verdict.tone))
 
                 Text(verdict.summary)
-                    .font(.footnote)
+                    .scaledFont(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if let note = disagreementNote(for: verdict) {
                     Text(note)
-                        .font(.footnote)
+                        .scaledFont(.callout)
                         .foregroundStyle(.orange)
                         .fixedSize(horizontal: false, vertical: true)
                 }

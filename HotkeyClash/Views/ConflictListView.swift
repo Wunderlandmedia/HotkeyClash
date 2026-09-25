@@ -124,6 +124,9 @@ struct ConflictListView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color("BrandBackground"))
+        // Read here, at the root, so a size change from Settings or the zoom keys
+        // redraws the whole panel, and every scaledFont below picks it up.
+        .environment(\.panelTextScale, SettingsManager.shared.panelTextSize.scale)
         .onChange(of: scanner.conflicts, initial: true) {
             // Rebuild the search index once when a scan produces new results,
             // not on every keystroke.
@@ -211,7 +214,7 @@ struct ConflictListView: View {
                 .onAppear { sidebarFocused = true }
             }
         }
-        .frame(width: 285)
+        .frame(width: SettingsManager.shared.panelTextSize.sidebarWidth)
     }
 
     /// Renders the current conflicts to Markdown and writes them to a user-chosen

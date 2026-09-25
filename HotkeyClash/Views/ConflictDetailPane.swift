@@ -23,10 +23,10 @@ struct ConflictDetailPane: View {
             } else {
                 VStack(spacing: 12) {
                     Image(systemName: "sidebar.left")
-                        .font(.system(size: 32))
+                        .scaledFont(size: 32)
                         .foregroundStyle(.quaternary)
                     Text("Select a conflict")
-                        .font(.subheadline)
+                        .scaledFont(.body)
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -23,6 +23,18 @@ struct GeneralSettingsTab: View {
         )
     }
 
+    /// Same shape as the pin in the panel: the setting alone is not enough, an
+    /// open panel has to be told to resize to match.
+    private var panelTextSize: Binding<PanelTextSize> {
+        Binding(
+            get: { settings.panelTextSize },
+            set: { size in
+                settings.panelTextSize = size
+                NotificationCenter.default.post(name: .panelTextSizeChanged, object: nil)
+            }
+        )
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
@@ -70,6 +82,26 @@ struct GeneralSettingsTab: View {
                             .toggleStyle(.switch)
                             .labelsHidden()
                             .disabled(!settings.autoRescanOnAppChange)
+                    }
+                }
+
+                SettingsCard(title: "Appearance") {
+                    SettingsRow(showDivider: false) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Text size")
+                            Text("Size of the text in the results panel. You can also press Cmd+Plus, Cmd+Minus, or Cmd+0 while the panel is open.")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Picker("Text size", selection: panelTextSize) {
+                            ForEach(PanelTextSize.allCases) { size in
+                                Text(size.label).tag(size)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .labelsHidden()
+                        .fixedSize()
                     }
                 }
 

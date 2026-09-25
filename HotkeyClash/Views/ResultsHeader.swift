@@ -32,11 +32,12 @@ struct ResultsHeader: View {
             // there is. Color plus shape so it reads without relying on color alone.
             Image(systemName: realConflictCount > 0 ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
                 .foregroundStyle(realConflictCount > 0 ? .orange : .green)
+                .scaledFont(.body)
             VStack(alignment: .leading, spacing: 2) {
                 Text(headline)
-                    .font(.subheadline.weight(.semibold))
+                    .scaledFont(.body, weight: .semibold)
                 Text(subhead)
-                    .font(.footnote)
+                    .scaledFont(.callout)
                     .foregroundStyle(.secondary)
             }
             if newConflictCount > 0 {
@@ -88,7 +89,7 @@ struct ResultsHeader: View {
     /// shown when there's something new; it isn't a permanent fixture of the header.
     private var newBadge: some View {
         Text(newConflictCount == 1 ? "1 new" : "\(newConflictCount) new")
-            .font(.footnote.weight(.semibold))
+            .scaledFont(.callout, weight: .semibold)
             .foregroundStyle(.orange)
             .padding(.horizontal, 7)
             .padding(.vertical, 2)

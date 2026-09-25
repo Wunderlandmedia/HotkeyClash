@@ -6,13 +6,14 @@ struct ConflictDetailView: View {
     let conflict: Conflict
     var tester: ShortcutTester
     @State private var icons: [String: NSImage] = [:]
+    @Environment(\.panelTextScale) private var textScale
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Key combo header
             HStack(spacing: 12) {
                 Text(conflict.displayString)
-                    .font(.system(.title2, design: .monospaced).weight(.semibold))
+                    .scaledFont(.title2, weight: .semibold, design: .monospaced)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
@@ -21,10 +22,10 @@ struct ConflictDetailView: View {
                     // Count apps, not bindings. One app claiming a combo twice
                     // is one app, however many rows it puts in the list.
                     Text("\(conflict.appCount) \(conflict.appCount == 1 ? "app uses" : "apps use") this shortcut")
-                        .font(.subheadline.weight(.medium))
+                        .scaledFont(.body, weight: .medium)
 
                     Text(severityLabel)
-                        .font(.footnote)
+                        .scaledFont(.callout)
                         .foregroundStyle(conflict.severity.tint)
                 }
             }
@@ -49,7 +50,7 @@ struct ConflictDetailView: View {
 
                     if binding.id != sortedBindings.last?.id {
                         Divider()
-                            .padding(.leading, 42)
+                            .padding(.leading, 42 * textScale)
                     }
                 }
             }
@@ -58,7 +59,7 @@ struct ConflictDetailView: View {
 
             // Explanation
             Text("Ordered by where each shortcut hooks the keyboard: driver remaps first, then event taps, system shortcuts, global hotkeys, and finally app menus. Registration order breaks ties, and nothing on disk records it.")
-                .font(.footnote)
+                .scaledFont(.subheadline)
                 .foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }

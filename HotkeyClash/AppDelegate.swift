@@ -116,6 +116,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             object: nil
         )
 
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handlePanelTextSizeChanged),
+            name: .panelTextSizeChanged,
+            object: nil
+        )
+
         startWorkspaceWatcher()
 
         // Scan on launch if enabled and AX permission is granted
@@ -190,6 +197,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     @objc private func handlePanelPinChanged() {
         statusBar.refreshDismissBehavior()
+    }
+
+    @objc private func handlePanelTextSizeChanged() {
+        statusBar.refreshTextSize()
     }
 
     /// Runs a scan and then refreshes the menu bar badge, queueing behind any scan

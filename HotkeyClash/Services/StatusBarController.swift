@@ -50,6 +50,7 @@ final class StatusBarController {
     func showPopover() {
         previousApp = NSWorkspace.shared.frontmostApplication
         panel.cancelDismiss()
+        panel.applyTextSize()
         panel.restorePosition()
         panel.makeKeyAndOrderFront(nil)
         panel.animateIn()
@@ -159,6 +160,38 @@ final class StatusBarController {
         startEventMonitor()
     }
 
+    /// Resizes an open panel after the text size changed in Settings. A closed
+    /// panel picks the new size up the next time it opens.
+    func refreshTextSize() {
+        guard panel?.isVisible == true else { return }
+        panel.applyTextSize()
+    }
+
+    /// Cmd+Plus, Cmd+Minus and Cmd+0, the same zoom keys Safari and Mail use, so
+    /// nobody has to find the setting to fix the size. Checked against the
+    /// characters rather than key codes so it follows the keyboard layout, and
+    /// both "=" and "+" count because Cmd+Plus is Cmd+Shift+= on most layouts.
+    /// Returns false for anything else, so the key carries on as normal.
+    private func handleTextSizeKey(_ event: NSEvent) -> Bool {
+        guard event.window === panel,
+              event.modifierFlags.intersection([.command, .option, .control]) == .command else { return false }
+        let settings = SettingsManager.shared
+        let target: PanelTextSize?
+        switch event.charactersIgnoringModifiers {
+        case "=", "+": target = settings.panelTextSize.stepUp
+        case "-": target = settings.panelTextSize.stepDown
+        case "0": target = .standard
+        default: return false
+        }
+        // Already at the end of the range: swallow the key anyway, so it does
+        // not fall through to the search field as a stray character.
+        if let target, target != settings.panelTextSize {
+            settings.panelTextSize = target
+            panel.applyTextSize()
+        }
+        return true
+    }
+
     private func startEventMonitor() {
         // Resuming can be asked for more than once, and monitors do not deduplicate
         // themselves, so make sure the old pair is gone before adding a new one.
@@ -174,6 +207,9 @@ final class StatusBarController {
         localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.keyCode == 53 {
                 self?.hidePopover()
+                return nil
+            }
+            if self?.handleTextSizeKey(event) == true {
                 return nil
             }
             return event
@@ -197,6 +233,7 @@ extension Notification.Name {
     static let triggerRescan = Notification.Name("triggerRescan")
     static let dismissPanel = Notification.Name("dismissPanel")
     static let panelPinChanged = Notification.Name("panelPinChanged")
+    static let panelTextSizeChanged = Notification.Name("panelTextSizeChanged")
 }
 
 final class FloatingPanel: NSPanel {
@@ -204,7 +241,7 @@ final class FloatingPanel: NSPanel {
 
     init(contentView: some View) {
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 800, height: 580),
+            contentRect: NSRect(origin: .zero, size: PanelTextSize.basePanelSize),
             styleMask: [.nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: true
@@ -251,6 +288,22 @@ final class FloatingPanel: NSPanel {
             return
         }
         setFrameOrigin(origin)
+    }
+
+    /// Sizes the panel for the current text size, keeping its top left corner
+    /// where it is so the content grows away from the spot the user put it.
+    ///
+    /// Growing can push the far edges off the screen, so the frame is nudged
+    /// back inside afterwards. Without that, going to Largest near the right
+    /// edge would hide half the detail pane.
+    func applyTextSize() {
+        guard let visible = (screen ?? NSScreen.main)?.visibleFrame else { return }
+        let size = SettingsManager.shared.panelTextSize.panelSize(fitting: visible.size)
+        guard frame.size != size else { return }
+        var resized = NSRect(x: frame.minX, y: frame.maxY - size.height, width: size.width, height: size.height)
+        resized.origin.x = min(max(resized.minX, visible.minX), visible.maxX - size.width)
+        resized.origin.y = min(max(resized.minY, visible.minY), visible.maxY - size.height)
+        setFrame(resized, display: true)
     }
 
     /// Records where the panel is now, so the next open lands in the same place.

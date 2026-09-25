@@ -8,7 +8,7 @@ struct RowActionButton: View {
     var body: some View {
         Button(title, systemImage: icon, action: action)
             .labelStyle(.iconOnly)
-            .font(.footnote)
+            .scaledFont(.callout)
             .foregroundStyle(.secondary)
             .buttonStyle(.plain)
     }

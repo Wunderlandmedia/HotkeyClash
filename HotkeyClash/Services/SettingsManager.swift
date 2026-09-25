@@ -26,6 +26,7 @@ final class SettingsManager {
         static let panelOriginX = "panelOriginX"
         static let panelOriginY = "panelOriginY"
         static let hasSavedPanelOrigin = "hasSavedPanelOrigin"
+        static let panelTextSize = "panelTextSize"
     }
 
     static let defaultShortcutKeyCode: UInt32 = 0x04 // H
@@ -55,6 +56,7 @@ final class SettingsManager {
         autoRescanOnAppChange = defaults.bool(forKey: Keys.autoRescanOnAppChange)
         notifyOnNewConflicts = defaults.bool(forKey: Keys.notifyOnNewConflicts)
         keepPanelOpen = defaults.bool(forKey: Keys.keepPanelOpen)
+        panelTextSize = PanelTextSize(rawValue: defaults.integer(forKey: Keys.panelTextSize)) ?? .standard
     }
 
     var hasCompletedOnboarding: Bool {
@@ -133,6 +135,12 @@ final class SettingsManager {
     /// else.
     var keepPanelOpen: Bool {
         didSet { defaults.set(keepPanelOpen, forKey: Keys.keepPanelOpen) }
+    }
+
+    /// How large the results panel draws its text. Stored as the raw step, so a
+    /// missing key reads as 0, which is the default size.
+    var panelTextSize: PanelTextSize {
+        didSet { defaults.set(panelTextSize.rawValue, forKey: Keys.panelTextSize) }
     }
 
     // MARK: - Panel position
