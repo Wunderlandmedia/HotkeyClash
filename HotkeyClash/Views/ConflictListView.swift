@@ -189,6 +189,13 @@ struct ConflictListView: View {
                     // The scope alone emptied the list: that is good news, not a
                     // failed search, so say so instead of showing the search state.
                     ContentUnavailableView(scope.emptyMessage, systemImage: "checkmark.circle")
+                } else if let combo = ComboLookup.parse(debouncedQuery) {
+                    // The query is a shortcut, so answer it: who owns it, or that
+                    // it is free. Runs once per debounced query, over one flat list.
+                    ComboLookupView(
+                        displayString: ShortcutFormatter.displayString(keyCode: UInt32(combo.keyCode), modifiers: combo.modifiers),
+                        owners: ComboLookup.owners(keyCode: combo.keyCode, modifiers: combo.modifiers, in: scanner.allBindings)
+                    )
                 } else {
                     // The stock search placeholder says "no results" and leaves the
                     // user guessing. Nine times out of ten the shortcut they looked
