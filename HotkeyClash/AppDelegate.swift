@@ -81,11 +81,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         statusBar.setup(with: contentView)
 
         let settings = SettingsManager.shared
-        HotKeyManager.shared.register(
-            keyCode: settings.globalShortcutKeyCode,
-            modifiers: settings.globalShortcutModifiers
-        ) { [weak self] in
+        HotKeyManager.shared.onTrigger = { [weak self] in
             self?.statusBar.showPopover()
+        }
+        if settings.globalShortcutEnabled {
+            HotKeyManager.shared.reregister(
+                keyCode: settings.globalShortcutKeyCode,
+                modifiers: settings.globalShortcutModifiers
+            )
         }
 
         NotificationCenter.default.addObserver(

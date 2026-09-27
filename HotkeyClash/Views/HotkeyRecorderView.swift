@@ -17,11 +17,25 @@ struct HotkeyRecorderView: View {
                     isRecording = false
                 }
                 .controlSize(.small)
-            } else {
+            } else if settings.globalShortcutEnabled {
                 Text(currentShortcutDisplay)
                     .font(.system(.body, design: .monospaced))
                     .foregroundStyle(.secondary)
                 Button("Change") {
+                    isRecording = true
+                }
+                .controlSize(.small)
+                // For people who only open the panel from the menu bar icon and
+                // would rather have the combo back for their other apps (issue #9).
+                Button("Disable") {
+                    settings.globalShortcutEnabled = false
+                    HotKeyManager.shared.unregister()
+                }
+                .controlSize(.small)
+            } else {
+                Text("None")
+                    .foregroundStyle(.secondary)
+                Button("Set Shortcut") {
                     isRecording = true
                 }
                 .controlSize(.small)
@@ -57,6 +71,7 @@ struct HotkeyRecorderView: View {
 
         settings.globalShortcutKeyCode = keyCode
         settings.globalShortcutModifiers = modifiers
+        settings.globalShortcutEnabled = true
         HotKeyManager.shared.reregister(keyCode: keyCode, modifiers: modifiers)
         isRecording = false
     }

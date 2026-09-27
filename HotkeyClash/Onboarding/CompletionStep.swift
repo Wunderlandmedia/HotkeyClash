@@ -21,10 +21,12 @@ struct CompletionStep: View {
             VStack(alignment: .leading, spacing: 12) {
                 SummaryRow(
                     label: "Open shortcut",
-                    value: ShortcutFormatter.displayString(
-                        keyCode: settings.globalShortcutKeyCode,
-                        carbonModifiers: settings.globalShortcutModifiers
-                    )
+                    value: settings.globalShortcutEnabled
+                        ? ShortcutFormatter.displayString(
+                            keyCode: settings.globalShortcutKeyCode,
+                            carbonModifiers: settings.globalShortcutModifiers
+                        )
+                        : "None"
                 )
                 SummaryRow(
                     label: "Accessibility",

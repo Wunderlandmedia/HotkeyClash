@@ -143,10 +143,13 @@ final class ShortcutScanner {
 
         // 4. Our own panel shortcut. No toggle and no source to read: it is a live
         // Carbon registration we made ourselves, and it clashes like any other.
-        bindings += ownShortcutScanner.scan(
-            keyCode: settings.globalShortcutKeyCode,
-            carbonModifiers: settings.globalShortcutModifiers
-        )
+        // Switched off, nothing is registered, so there is nothing to report.
+        if settings.globalShortcutEnabled {
+            bindings += ownShortcutScanner.scan(
+                keyCode: settings.globalShortcutKeyCode,
+                carbonModifiers: settings.globalShortcutModifiers
+            )
+        }
 
         // 5. Combine and detect conflicts
         allBindings = bindings

@@ -15,6 +15,7 @@ final class SettingsManager {
         static let scanOnLaunch = "scanOnLaunch"
         static let globalShortcutKeyCode = "globalShortcutKeyCode"
         static let globalShortcutModifiers = "globalShortcutModifiers"
+        static let globalShortcutEnabled = "globalShortcutEnabled"
         static let hasCompletedOnboarding = "hasCompletedOnboarding"
         static let scanRunningApps = "scanRunningApps"
         static let scanConfigFiles = "scanConfigFiles"
@@ -38,6 +39,7 @@ final class SettingsManager {
             Keys.scanOnLaunch: true,
             Keys.globalShortcutKeyCode: Self.defaultShortcutKeyCode,
             Keys.globalShortcutModifiers: Self.defaultShortcutModifiers,
+            Keys.globalShortcutEnabled: true,
             Keys.scanRunningApps: true,
             Keys.scanConfigFiles: true,
             Keys.scanSystemShortcuts: true,
@@ -49,6 +51,7 @@ final class SettingsManager {
         scanOnLaunch = defaults.bool(forKey: Keys.scanOnLaunch)
         globalShortcutKeyCode = UInt32(defaults.integer(forKey: Keys.globalShortcutKeyCode))
         globalShortcutModifiers = UInt32(defaults.integer(forKey: Keys.globalShortcutModifiers))
+        globalShortcutEnabled = defaults.bool(forKey: Keys.globalShortcutEnabled)
         scanRunningApps = defaults.bool(forKey: Keys.scanRunningApps)
         scanConfigFiles = defaults.bool(forKey: Keys.scanConfigFiles)
         scanSystemShortcuts = defaults.bool(forKey: Keys.scanSystemShortcuts)
@@ -85,6 +88,13 @@ final class SettingsManager {
 
     var globalShortcutModifiers: UInt32 {
         didSet { defaults.set(globalShortcutModifiers, forKey: Keys.globalShortcutModifiers) }
+    }
+
+    /// Off means no global shortcut at all, for people who only ever open the
+    /// panel from the menu bar icon (issue #9). A separate flag rather than a
+    /// blanked-out combo, so turning it back on brings back the one they had.
+    var globalShortcutEnabled: Bool {
+        didSet { defaults.set(globalShortcutEnabled, forKey: Keys.globalShortcutEnabled) }
     }
 
     // MARK: - Scan sources

@@ -12,7 +12,11 @@ final class HotKeyManager {
     private var handlerRef: EventHandlerRef?
     /// Invoked from the Carbon hot-key callback, which Carbon delivers on the main
     /// thread. Kept main-actor isolated; do not invoke it from any other context.
-    private var onTrigger: (() -> Void)?
+    ///
+    /// Settable on its own because the shortcut can be switched off at launch
+    /// (issue #9). The app still hands over the trigger then, so turning the
+    /// shortcut on later in Settings has something to `reregister` with.
+    var onTrigger: (() -> Void)?
 
     private init() {}
 
