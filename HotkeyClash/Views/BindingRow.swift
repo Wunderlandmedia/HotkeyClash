@@ -83,6 +83,7 @@ struct BindingRow: View {
         case .configFile: "doc.text"
         case .systemShortcut: "gearshape"
         case .globalHotkey: "command.circle"
+        case .appConfig: "keyboard"
         }
     }
 
@@ -122,6 +123,7 @@ struct BindingRow: View {
         case .configFile: "Config"
         case .systemShortcut: "System"
         case .globalHotkey: "Global Hotkey"
+        case .appConfig: "In-App"
         }
     }
 
@@ -131,6 +133,7 @@ struct BindingRow: View {
         case .configFile: .purple
         case .systemShortcut: .orange
         case .globalHotkey: .teal
+        case .appConfig: .indigo
         }
     }
 }

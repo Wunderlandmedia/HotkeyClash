@@ -113,6 +113,7 @@ enum ConflictReport {
         case .configFile: "Config"
         case .systemShortcut: "System"
         case .globalHotkey: "Global Hotkey"
+        case .appConfig: "In-App"
         }
     }
 

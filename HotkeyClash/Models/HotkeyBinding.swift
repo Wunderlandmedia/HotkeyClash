@@ -22,6 +22,10 @@ nonisolated struct HotkeyBinding: Identifiable, Hashable {
         /// only HotkeyClash's own panel shortcut, which used to be the one binding
         /// on the machine the app was blind to.
         case globalHotkey
+        /// An app's own in-app shortcut, read from its settings file rather than
+        /// its menu bar (Obsidian's command hotkeys). Not global: it only fires
+        /// while that app is frontmost, so it sits on the menu item layer.
+        case appConfig
     }
 
     init(

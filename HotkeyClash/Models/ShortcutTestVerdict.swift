@@ -82,10 +82,11 @@ nonisolated enum ShortcutTestVerdict: Equatable {
                 }
                 return .unregisteredApp(name: activated.name)
             }
-            // Nothing came to the front. A menu shortcut would not make anything
-            // appear, so the app that was already there is the next best candidate.
+            // Nothing came to the front. A menu or in-app shortcut would not make
+            // anything appear, so the app that was already there is the next best
+            // candidate.
             if let front = result.frontmostApp,
-               let match = bindings.first(where: { $0.source == .menuBar && matches($0, front) }) {
+               let match = bindings.first(where: { HotkeyLayer.classify($0) == .menuItem && matches($0, front) }) {
                 return .reachedApp(binding: match, evidence: .alreadyFrontmost)
             }
             return .survivedUnclaimed(ruledOut: tapTools)

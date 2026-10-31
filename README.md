@@ -25,11 +25,12 @@ Open-source macOS menu bar utility that scans running apps, config files, and sy
 
 - Scans running apps' menu bar shortcuts via Accessibility API
 - Parses Karabiner-Elements, skhd, Keyboard Maestro, BetterTouchTool, Hammerspoon, and Alfred configs
+- Reads Obsidian's custom command hotkeys, which never show up in its menu bar
 - Reads macOS system shortcuts (Spotlight, Mission Control, Screenshots, etc.)
 - Classifies conflicts as definite (global vs global) or potential (menu vs menu)
 - Tells you which shortcut most likely wins, based on where each one hooks the keyboard
 - Watches a real keypress and reports which app actually caught it
-- Search by app, action, or key combo, and export the whole report as Markdown
+- Search by app, action, or key combo (or narrow it with `key:u`, `app:finder`, `action:copy`), and export the whole report as Markdown
 - 800x580 split view: conflict sidebar + detail pane with app icons and source badges
 - Pin the panel open so it stays put while you go and fix the clash
 - Reads Globe (fn) shortcuts, and lists its own hotkey rather than pretending it has none
@@ -82,6 +83,7 @@ Artifacts land in `build/release/`.
 | BetterTouchTool | `~/Library/Application Support/BetterTouchTool/btt_data_store.*` (SQLite, read-only) |
 | Hammerspoon | `~/.hammerspoon/init.lua` (`hs.hotkey.bind` calls) |
 | Alfred | `Alfred.alfredpreferences` workflow `info.plist` hotkey triggers |
+| Obsidian | `<vault>/.obsidian/hotkeys.json` for every vault in `obsidian.json` (in-app, not global) |
 | macOS system shortcuts | `com.apple.symbolichotkeys` plist |
 
 ## Which shortcut actually wins?
@@ -102,8 +104,7 @@ Accessibility permission is required to scan running apps. Config files and syst
 
 ## Planned
 
-- Scoped search, so a query can target the app, the action, or the key combo alone
-- Obsidian and other command-palette apps that keep shortcuts outside the menu bar
+- Other command-palette apps that keep shortcuts outside the menu bar (VS Code next)
 - Background monitoring: notice when another app steals a shortcut, without being asked
 
 Raycast is not on the list. Its store is encrypted (SQLCipher, key in the login

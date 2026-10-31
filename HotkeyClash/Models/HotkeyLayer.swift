@@ -27,7 +27,8 @@ nonisolated enum HotkeyLayer: Int, CaseIterable, Comparable, Sendable {
     case globalHotKey = 3
     /// An always-on tool whose hook point we do not recognise.
     case otherGlobal = 4
-    /// An app menu item. Only live while that app is frontmost.
+    /// An app menu item, or an in-app shortcut from the app's own settings.
+    /// Only live while that app is frontmost.
     case menuItem = 5
 
     static func < (lhs: HotkeyLayer, rhs: HotkeyLayer) -> Bool {
@@ -45,7 +46,7 @@ nonisolated enum HotkeyLayer: Int, CaseIterable, Comparable, Sendable {
     static func classify(_ binding: HotkeyBinding) -> HotkeyLayer {
         switch binding.source {
         case .systemShortcut: .system
-        case .menuBar: .menuItem
+        case .menuBar, .appConfig: .menuItem
         case .globalHotkey: .globalHotKey
         case .configFile: configFileLayer(for: binding)
         }
