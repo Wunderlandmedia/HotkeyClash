@@ -30,10 +30,10 @@ struct ConflictListView: View {
     /// short enough to feel responsive, long enough to skip intermediate keystrokes. At least that's what I think lol.
     private static let searchDebounce = Duration.milliseconds(250)
 
-    /// Per-conflict word list for searching, built once per scan rather than on
-    /// every keystroke. Keyed by conflict id. Words come from the spelled-out combo
-    /// (so "shift"/"cmd" match glyph combos), app names, and actions.
-    @State private var searchIndex: [Conflict.ID: [String]] = [:]
+    /// Per-conflict search words, built once per scan rather than on every
+    /// keystroke. Keyed by conflict id. Kept per field (combo, key, app, action)
+    /// so a `key:` or `app:` query can look at just one of them.
+    @State private var searchIndex: [Conflict.ID: ConflictSearch.Entry] = [:]
 
     /// Focus starts on the sidebar so arrow keys work the moment the panel opens.
     /// The list has always supported them; without focus, the first keypress was
@@ -60,41 +60,26 @@ struct ConflictListView: View {
     }
 
     /// The sidebar list after applying the severity scope and the search filter.
-    /// Scope narrows first (cheap category check), then each whitespace-separated
-    /// token must prefix-match some word in the precomputed index, with AND semantics
-    /// across tokens, so "cmd shift c" narrows in any order. Prefix (not substring)
-    /// matching keeps "p" from matching the middle of "WhatsApp". Empty query shows
-    /// everything in scope. Driven by `debouncedQuery`, not `searchText`.
+    /// Scope narrows first (cheap category check), then `ConflictSearch` applies
+    /// the query against the precomputed index. Empty query shows everything in
+    /// scope. Driven by `debouncedQuery`, not the live field text.
     private var filteredConflicts: [Conflict] {
         let scoped = scope == .all ? rankedConflicts : rankedConflicts.filter { scope.matches($0) }
-        let tokens = debouncedQuery.lowercased().split(whereSeparator: \.isWhitespace).map(String.init)
-        guard !tokens.isEmpty else { return scoped }
+        guard !debouncedQuery.trimmingCharacters(in: .whitespaces).isEmpty else { return scoped }
         return scoped.filter { conflict in
-            guard let words = searchIndex[conflict.id] else { return false }
-            return tokens.allSatisfy { token in words.contains { $0.hasPrefix(token) } }
+            guard let entry = searchIndex[conflict.id] else { return false }
+            return ConflictSearch.matches(entry, query: debouncedQuery)
         }
     }
 
-    /// Rebuilds the word index from the current scan results. Called when the
+    /// Rebuilds the search index from the current scan results. Called when the
     /// conflict set changes, not per keystroke.
     private func rebuildSearchIndex() {
-        var index: [Conflict.ID: [String]] = [:]
+        var index: [Conflict.ID: ConflictSearch.Entry] = [:]
         for conflict in scanner.conflicts {
-            var words = conflict.searchableText.split(separator: " ").map(String.init)
-            for binding in conflict.bindings {
-                words += tokenize(binding.ownerName)
-                words += tokenize(binding.action)
-            }
-            index[conflict.id] = words
+            index[conflict.id] = ConflictSearch.entry(for: conflict)
         }
         searchIndex = index
-    }
-
-    /// Splits free text into lowercased alphanumeric word tokens for the index.
-    private func tokenize(_ text: String) -> [String] {
-        text.lowercased()
-            .split { !$0.isLetter && !$0.isNumber }
-            .map(String.init)
     }
 
     private var selectedConflict: Conflict? {

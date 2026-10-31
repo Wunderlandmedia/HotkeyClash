@@ -19,7 +19,7 @@ struct ConflictSearchField: View {
             Image(systemName: "magnifyingglass")
                 .scaledFont(.callout)
                 .foregroundStyle(.secondary)
-            TextField("Filter by app, action, or key (e.g. shift, cmd c)", text: $text)
+            TextField("Filter by app, action, or key (e.g. cmd c, key:u, app:finder)", text: $text)
                 .textFieldStyle(.plain)
                 .scaledFont(.body)
             // Only show the clear button once there's something to clear.
