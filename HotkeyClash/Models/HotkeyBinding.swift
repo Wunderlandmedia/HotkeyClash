@@ -14,6 +14,12 @@ nonisolated struct HotkeyBinding: Identifiable, Hashable {
     let action: String
     let source: BindingSource
 
+    /// The event-stack layer the source itself declares. Nil for every built-in
+    /// scanner, which `HotkeyLayer` classifies by owner. Only a custom source
+    /// file sets it, because there the tool is one HotkeyClash has never heard of
+    /// and the file is the only thing that knows where it hooks the keyboard.
+    let declaredLayer: HotkeyLayer?
+
     enum BindingSource: String, CaseIterable {
         case menuBar
         case configFile
@@ -34,7 +40,8 @@ nonisolated struct HotkeyBinding: Identifiable, Hashable {
         ownerName: String,
         ownerBundleID: String? = nil,
         action: String,
-        source: BindingSource
+        source: BindingSource,
+        declaredLayer: HotkeyLayer? = nil
     ) {
         self.id = UUID()
         self.keyCode = keyCode
@@ -43,6 +50,7 @@ nonisolated struct HotkeyBinding: Identifiable, Hashable {
         self.ownerBundleID = ownerBundleID
         self.action = action
         self.source = source
+        self.declaredLayer = declaredLayer
     }
 
     /// Strips device-specific flags, keeping the four standard modifiers plus Globe.

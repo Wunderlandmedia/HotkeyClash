@@ -123,6 +123,14 @@ add a dedicated service in `Services/` that exposes a `scan()` returning
 `[HotkeyBinding]`, then wire it into `ShortcutScanner.runScan()` alongside the existing
 scanners. Keep it `@MainActor` and follow the conventions below.
 
+### A tool that cannot be parsed at all
+
+If the shortcuts are not readable from disk (encrypted, in-memory only), do not add a
+parser that guesses. Point users at the custom source format in the README instead:
+`~/.config/hotkeyclash/sources/*.json` lets them supply the list themselves, and
+`CustomSourceScanner` already carries it into the scan under the tool's own name and
+layer.
+
 The planned-but-unimplemented sources (Keyboard Maestro, BetterTouchTool, Hammerspoon,
 Alfred, Raycast) are good first contributions and are tracked in the roadmap.
 
