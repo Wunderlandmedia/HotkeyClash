@@ -85,6 +85,36 @@ Artifacts land in `build/release/`.
 | Alfred | `Alfred.alfredpreferences` workflow `info.plist` hotkey triggers |
 | Obsidian | `<vault>/.obsidian/hotkeys.json` for every vault in `obsidian.json` (in-app, not global) |
 | macOS system shortcuts | `com.apple.symbolichotkeys` plist |
+| Custom sources | `~/.config/hotkeyclash/sources/*.json`, one file per tool you list yourself (see below) |
+
+### Custom sources
+
+Some tools keep their shortcuts where no parser can follow: an encrypted store, a
+daemon that holds its chords only in memory, a launcher with no config file. If you
+can get the list out yourself, by hand or with a script, drop it in
+`~/.config/hotkeyclash/sources/` and HotkeyClash scans it like any other config
+file, under the tool's own name and on the layer you say it hooks:
+
+```json
+{
+  "name": "Raycast",
+  "bundleID": "com.raycast.macos",
+  "layer": "globalHotkey",
+  "bindings": [
+    { "key": "space", "modifiers": ["cmd"], "action": "Open Raycast" },
+    { "key": "b", "modifiers": ["ctrl", "alt", "cmd"], "action": "Bitwarden" },
+    { "keyCode": 49, "modifiers": ["opt"], "action": "Clipboard history" }
+  ]
+}
+```
+
+`name` is required. `bundleID` is optional and only fetches the app icon. `layer` is
+one of `driver`, `eventTap`, `system`, `globalHotkey`, `global` (the default), or
+`menuItem`; `menuItem` marks the shortcuts as in-app, so they only count against
+that app's own menus. Keys take the names Hammerspoon uses (`space`, `return`,
+`left`, `f5`, `pad5`, letters and digits) or a raw macOS `keyCode`. Modifiers are
+`cmd`, `opt`/`alt`, `shift`, `ctrl`, and `fn`/`globe`. A binding whose key does not
+resolve is skipped rather than guessed.
 
 ## Which shortcut actually wins?
 
@@ -109,7 +139,9 @@ Accessibility permission is required to scan running apps. Config files and syst
 
 Raycast is not on the list. Its store is encrypted (SQLCipher, key in the login
 keychain) and its preferences carry no key data, so there is nothing a parser can
-read. The live keypress test is the honest answer for Raycast users.
+read. The live keypress test is the honest answer for Raycast users, and if you
+have pulled your own hotkeys out of it, a custom source file will put them in the
+scan under Raycast's name.
 
 ## Star History
 

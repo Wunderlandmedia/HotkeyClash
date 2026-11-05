@@ -42,13 +42,29 @@ nonisolated enum HotkeyLayer: Int, CaseIterable, Comparable, Sendable {
     /// Config-file bindings are the interesting case: the `.configFile` source
     /// lumps six very different tools together, so we look at who owns the
     /// binding. Bundle ID where there is one, owner name for skhd, which is a
-    /// bare daemon with no bundle.
+    /// bare daemon with no bundle. A custom source file names its own layer, and
+    /// that wins over the owner lookup, since the owner is a tool we do not know.
     static func classify(_ binding: HotkeyBinding) -> HotkeyLayer {
         switch binding.source {
         case .systemShortcut: .system
         case .menuBar, .appConfig: .menuItem
         case .globalHotkey: .globalHotKey
-        case .configFile: configFileLayer(for: binding)
+        case .configFile: binding.declaredLayer ?? configFileLayer(for: binding)
+        }
+    }
+
+    /// The layer a custom source file names, by the same words the detail pane
+    /// uses for its badge. Nil for anything unrecognised, so a typo falls back to
+    /// the catch-all rather than a confident wrong position.
+    static func named(_ name: String) -> HotkeyLayer? {
+        switch name.lowercased() {
+        case "driver": .driver
+        case "eventtap", "event tap": .eventTap
+        case "system": .system
+        case "globalhotkey", "global hotkey": .globalHotKey
+        case "global", "otherglobal": .otherGlobal
+        case "menuitem", "menu item": .menuItem
+        default: nil
         }
     }
 

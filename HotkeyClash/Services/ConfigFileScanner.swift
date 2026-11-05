@@ -17,6 +17,7 @@ final class ConfigFileScanner {
     private let hammerspoon = HammerspoonScanner()
     private let alfred = AlfredScanner()
     private let obsidian = ObsidianScanner()
+    private let customSources = CustomSourceScanner()
 
     // MARK: - Public
 
@@ -29,6 +30,7 @@ final class ConfigFileScanner {
         bindings.append(contentsOf: await hammerspoon.scan())
         bindings.append(contentsOf: await alfred.scan())
         bindings.append(contentsOf: await obsidian.scan())
+        bindings.append(contentsOf: await customSources.scan())
         return bindings
     }
 
