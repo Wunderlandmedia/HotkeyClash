@@ -114,6 +114,7 @@ enum ConflictReport {
         case .systemShortcut: "System"
         case .globalHotkey: "Global Hotkey"
         case .appConfig: "In-App"
+        case .service: "Service"
         }
     }
 

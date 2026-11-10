@@ -84,6 +84,7 @@ struct BindingRow: View {
         case .systemShortcut: "gearshape"
         case .globalHotkey: "command.circle"
         case .appConfig: "keyboard"
+        case .service: "contextualmenu.and.cursorarrow"
         }
     }
 
@@ -124,6 +125,7 @@ struct BindingRow: View {
         case .systemShortcut: "System"
         case .globalHotkey: "Global Hotkey"
         case .appConfig: "In-App"
+        case .service: "Service"
         }
     }
 
@@ -134,6 +136,7 @@ struct BindingRow: View {
         case .systemShortcut: .orange
         case .globalHotkey: .teal
         case .appConfig: .indigo
+        case .service: .brown
         }
     }
 }

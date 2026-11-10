@@ -46,7 +46,7 @@ nonisolated enum HotkeyLayer: Int, CaseIterable, Comparable, Sendable {
     static func classify(_ binding: HotkeyBinding) -> HotkeyLayer {
         switch binding.source {
         case .systemShortcut: .system
-        case .menuBar, .appConfig: .menuItem
+        case .menuBar, .appConfig, .service: .menuItem
         case .globalHotkey: .globalHotKey
         case .configFile: configFileLayer(for: binding)
         }

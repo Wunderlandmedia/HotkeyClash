@@ -26,6 +26,10 @@ nonisolated struct HotkeyBinding: Identifiable, Hashable {
         /// its menu bar (Obsidian's command hotkeys). Not global: it only fires
         /// while that app is frontmost, so it sits on the menu item layer.
         case appConfig
+        /// A shortcut on a macOS Service (Terminal's "Open man Page", Make New
+        /// Sticky Note). It works in every Cocoa app, but only when the frontmost
+        /// app's own menus did not take the key, so it sits with the menu items.
+        case service
     }
 
     init(

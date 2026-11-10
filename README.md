@@ -27,6 +27,7 @@ Open-source macOS menu bar utility that scans running apps, config files, and sy
 - Parses Karabiner-Elements, skhd, Keyboard Maestro, BetterTouchTool, Hammerspoon, and Alfred configs
 - Reads Obsidian's custom command hotkeys, which never show up in its menu bar
 - Reads macOS system shortcuts (Spotlight, Mission Control, Screenshots, etc.)
+- Reads shortcuts on macOS Services (Terminal's Open man Page, Make New Sticky Note, etc.)
 - Classifies conflicts as definite (global vs global) or potential (menu vs menu)
 - Tells you which shortcut most likely wins, based on where each one hooks the keyboard
 - Watches a real keypress and reports which app actually caught it
@@ -85,6 +86,7 @@ Artifacts land in `build/release/`.
 | Alfred | `Alfred.alfredpreferences` workflow `info.plist` hotkey triggers |
 | Obsidian | `<vault>/.obsidian/hotkeys.json` for every vault in `obsidian.json` (in-app, not global) |
 | macOS system shortcuts | `com.apple.symbolichotkeys` plist |
+| macOS Services | `com.apple.ServicesMenu.Services` plus your overrides in `pbs` (works in any app, so it sits with menu shortcuts) |
 
 ## Which shortcut actually wins?
 

@@ -51,6 +51,7 @@ final class ShortcutScanner {
     private let menuBarScanner = MenuBarScanner()
     private let configFileScanner = ConfigFileScanner()
     private let systemShortcutScanner = SystemShortcutScanner()
+    private let servicesShortcutScanner = ServicesShortcutScanner()
     private let ownShortcutScanner = OwnShortcutScanner()
 
     /// Number of always-on clashes (involve a global hotkey). The actionable count,
@@ -123,10 +124,12 @@ final class ShortcutScanner {
         let start = Date()
         var bindings: [HotkeyBinding] = []
 
-        // 1. System shortcuts (fast, no AX needed)
+        // 1. System shortcuts, Services included (fast, no AX needed). Services
+        // live in the same Keyboard Shortcuts settings, so they share the toggle.
         if scanSystemShortcuts {
             state = .scanning(progress: "Scanning system shortcuts...")
             bindings += systemShortcutScanner.scan()
+            bindings += servicesShortcutScanner.scan()
         }
 
         // 2. Config files (no AX needed; the heavier parsers run off-main)
