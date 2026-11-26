@@ -5,7 +5,16 @@ import os
 // nonisolated so the off-main workflow readers can log too; Logger is Sendable.
 private nonisolated let logger = Logger(subsystem: "com.hotkeyclash.app", category: "AlfredScanner")
 
-/// Reads Alfred's workflows and extracts every assigned hot key trigger.
+/// Reads Alfred's main hotkey and every assigned workflow hot key trigger.
+///
+/// The main hotkey (the one that opens Alfred's search box) isn't a workflow at
+/// all. Alfred treats it as a per-Mac setting and keeps it at
+/// `preferences/local/<localhash>/hotkey/prefs.plist` inside the bundle, under a
+/// `default` dict with the same raw `key` keycode and Cocoa `mod` value the
+/// workflows use. The catch: Alfred only writes that file once someone changes
+/// the hotkey. Leave it on the out-of-the-box Alt+Space and there is no file,
+/// which is exactly how we used to miss the most common Alfred shortcut of all
+/// (issue #14). So no file means Alt+Space.
 ///
 /// Alfred keeps each workflow in its own folder inside the
 /// `Alfred.alfredpreferences` bundle, with an `info.plist` describing the
@@ -27,11 +36,16 @@ private nonisolated let logger = Logger(subsystem: "com.hotkeyclash.app", catego
 /// Powerpack users commonly sync their preferences out to Dropbox or iCloud.
 /// `prefs.json` records where the bundle actually lives, so we follow that
 /// pointer first and fall back to the default local folder only when it isn't
-/// there.
+/// there. The same file holds this Mac's `localhash`.
 @MainActor
 final class AlfredScanner {
 
     private static let supportDirectory = "~/Library/Application Support/Alfred"
+    private nonisolated static let bundleID = "com.runningwithcrayons.Alfred"
+
+    /// Alfred's out-of-the-box hotkey, Alt+Space, in its own key/mod encoding.
+    private nonisolated static let defaultMainKey = 49
+    private nonisolated static let defaultMainMod = 1 << 19
 
     /// A single workflow's info.plist should never be large; anything past this
     /// is corruption, not configuration. Same spirit as the other scanners'
@@ -39,40 +53,53 @@ final class AlfredScanner {
     private nonisolated static let maxWorkflowBytes = 10 * 1024 * 1024
 
     func scan() async -> [HotkeyBinding] {
-        guard let workflowsDir = Self.workflowsDirectory() else {
-            logger.debug("Alfred workflows folder not found")
+        let prefs = Self.readPrefsJSON()
+        guard let bundle = Self.preferencesBundle(prefs: prefs) else {
+            logger.debug("Alfred preferences bundle not found")
             return []
         }
 
-        let bindings = await Self.loadAndParse(workflowsDir: workflowsDir)
-        logger.info("Alfred: found \(bindings.count) hot key triggers")
+        var bindings: [HotkeyBinding] = []
+        if let main = Self.mainHotkey(bundle: bundle, localHash: prefs?["localhash"] as? String) {
+            bindings.append(main)
+        }
+
+        let workflowsDir = (bundle as NSString).appendingPathComponent("workflows")
+        bindings.append(contentsOf: await Self.loadAndParse(workflowsDir: workflowsDir))
+        logger.info("Alfred: found \(bindings.count) hot keys")
         return bindings
     }
 
     // MARK: - Locating the preferences bundle
 
-    /// Resolves the `workflows` folder inside the active `Alfred.alfredpreferences`
-    /// bundle. Prefers the synced location `prefs.json` points at, then falls back
-    /// to the default local bundle. Returns nil when neither exists, so a machine
-    /// without Alfred simply contributes nothing.
-    private static func workflowsDirectory() -> String? {
+    private static func readPrefsJSON() -> [String: Any]? {
         let support = NSString(string: supportDirectory).expandingTildeInPath
-        let fm = FileManager.default
+        let prefsPath = (support as NSString).appendingPathComponent("prefs.json")
+        guard let data = FileManager.default.contents(atPath: prefsPath) else { return nil }
+        return try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+    }
 
+    /// Resolves the active `Alfred.alfredpreferences` bundle. Prefers the synced
+    /// location `prefs.json` points at, then falls back to the default local
+    /// bundle. Returns nil when neither exists, so a machine without Alfred
+    /// simply contributes nothing.
+    private static func preferencesBundle(prefs: [String: Any]?) -> String? {
+        let support = NSString(string: supportDirectory).expandingTildeInPath
         var candidates: [String] = []
 
-        // prefs.json's `current` is the sync folder that holds the bundle.
-        let prefsPath = (support as NSString).appendingPathComponent("prefs.json")
-        if let data = fm.contents(atPath: prefsPath),
-           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let current = json["current"] as? String, !current.isEmpty {
-            let base = NSString(string: current).expandingTildeInPath
-            candidates.append((base as NSString).appendingPathComponent("Alfred.alfredpreferences/workflows"))
+        // Setups in the wild disagree on whether `current` names the bundle
+        // itself or the sync folder holding it, so take it either way.
+        if let current = prefs?["current"] as? String, !current.isEmpty {
+            let path = NSString(string: current).expandingTildeInPath
+            candidates.append(path.hasSuffix(".alfredpreferences")
+                ? path
+                : (path as NSString).appendingPathComponent("Alfred.alfredpreferences"))
         }
 
         // Default local bundle.
-        candidates.append((support as NSString).appendingPathComponent("Alfred.alfredpreferences/workflows"))
+        candidates.append((support as NSString).appendingPathComponent("Alfred.alfredpreferences"))
 
+        let fm = FileManager.default
         for dir in candidates {
             var isDirectory: ObjCBool = false
             if fm.fileExists(atPath: dir, isDirectory: &isDirectory), isDirectory.boolValue {
@@ -80,6 +107,25 @@ final class AlfredScanner {
             }
         }
         return nil
+    }
+
+    // MARK: - Main hotkey
+
+    /// Reads this Mac's main hotkey file, if Alfred ever wrote one. A leftover
+    /// preferences bundle from an uninstalled Alfred would otherwise claim
+    /// Alt+Space forever, so the app has to actually be installed.
+    private static func mainHotkey(bundle: String, localHash: String?) -> HotkeyBinding? {
+        guard NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) != nil else { return nil }
+
+        var plist: Any?
+        if let localHash, !localHash.isEmpty {
+            let path = (bundle as NSString)
+                .appendingPathComponent("preferences/local/\(localHash)/hotkey/prefs.plist")
+            if let data = FileManager.default.contents(atPath: path) {
+                plist = try? PropertyListSerialization.propertyList(from: data, format: nil)
+            }
+        }
+        return mainHotkeyBinding(fromHotkeyPrefs: plist)
     }
 
     // MARK: - Reading
@@ -153,12 +199,38 @@ final class AlfredScanner {
                 keyCode: UInt16(rawKey),
                 modifiers: modifierFlags(fromHotmod: hotmod),
                 ownerName: "Alfred",
-                ownerBundleID: "com.runningwithcrayons.Alfred",
+                ownerBundleID: bundleID,
                 action: name,
                 source: .configFile
             ))
         }
         return results
+    }
+
+    /// Turns the decoded main hotkey prefs into a binding. Pure so tests can feed
+    /// fixtures in. Nil prefs (no file) or no `default` entry means the user never
+    /// changed the hotkey, so Alfred is listening on Alt+Space. A `default` entry
+    /// without a usable keycode is something we don't understand, so we skip it
+    /// rather than guess.
+    nonisolated static func mainHotkeyBinding(fromHotkeyPrefs plist: Any?) -> HotkeyBinding? {
+        var key = defaultMainKey
+        var mod = defaultMainMod
+
+        if let entry = (plist as? [String: Any])?["default"] as? [String: Any] {
+            guard let rawKey = entry["key"] as? Int,
+                  rawKey >= 0, rawKey <= Int(UInt16.max) else { return nil }
+            key = rawKey
+            mod = entry["mod"] as? Int ?? 0
+        }
+
+        return HotkeyBinding(
+            keyCode: UInt16(key),
+            modifiers: modifierFlags(fromHotmod: mod),
+            ownerName: "Alfred",
+            ownerBundleID: bundleID,
+            action: "Show Alfred",
+            source: .configFile
+        )
     }
 
     /// Alfred stores `hotmod` as the raw Cocoa `NSEvent.ModifierFlags` value, so

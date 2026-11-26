@@ -145,4 +145,46 @@ struct AlfredScannerTests {
         #expect(AlfredScanner.bindings(fromWorkflow: ["objects": "wrong type"]).isEmpty)
         #expect(AlfredScanner.bindings(fromWorkflow: 42).isEmpty)
     }
+
+    // MARK: - Main hotkey
+
+    @Test("No hotkey file means Alfred's default Alt+Space")
+    func mainHotkeyDefaultsToAltSpace() throws {
+        let binding = try #require(AlfredScanner.mainHotkeyBinding(fromHotkeyPrefs: nil))
+        #expect(binding.keyCode == 49)
+        #expect(binding.normalizedModifiers == [.option])
+        #expect(binding.ownerName == "Alfred")
+        #expect(binding.action == "Show Alfred")
+        #expect(binding.source == .configFile)
+    }
+
+    @Test("A file without a default entry still means Alt+Space")
+    func mainHotkeyWithoutDefaultEntry() throws {
+        let binding = try #require(AlfredScanner.mainHotkeyBinding(fromHotkeyPrefs: ["other": 1]))
+        #expect(binding.keyCode == 49)
+        #expect(binding.normalizedModifiers == [.option])
+    }
+
+    @Test("A changed main hotkey is read from the default entry")
+    func mainHotkeyReadsDefaultEntry() throws {
+        // Cmd+Space, the way Alfred writes it once the user changes the hotkey.
+        let prefs: [String: Any] = ["default": ["key": 49, "mod": Self.cmd, "string": " "]]
+        let binding = try #require(AlfredScanner.mainHotkeyBinding(fromHotkeyPrefs: prefs))
+        #expect(binding.keyCode == 49)
+        #expect(binding.normalizedModifiers == [.command])
+    }
+
+    @Test("Side-specific modifier bits are dropped from the main hotkey")
+    func mainHotkeyDropsDeviceBits() throws {
+        // Low bits carry left/right-hand modifier info that we don't group by.
+        let prefs: [String: Any] = ["default": ["key": 49, "mod": Self.cmd | 0x8]]
+        let binding = try #require(AlfredScanner.mainHotkeyBinding(fromHotkeyPrefs: prefs))
+        #expect(binding.normalizedModifiers == [.command])
+    }
+
+    @Test("A default entry without a usable keycode is skipped, not guessed")
+    func mainHotkeyMalformedEntry() {
+        #expect(AlfredScanner.mainHotkeyBinding(fromHotkeyPrefs: ["default": ["mod": Self.cmd]]) == nil)
+        #expect(AlfredScanner.mainHotkeyBinding(fromHotkeyPrefs: ["default": ["key": -1]]) == nil)
+    }
 }
