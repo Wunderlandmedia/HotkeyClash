@@ -105,6 +105,14 @@ final class StatusBarController {
                     icon.draw(in: rect)
                 }
 
+                // The composite is marked non-template below so the red badge
+                // keeps its color, which also means AppKit stops tinting the
+                // glyph for us. Left alone it draws dark and vanishes on a dark
+                // menu bar, so recolor it ourselves. sourceAtop only touches
+                // pixels the glyph already covers.
+                NSColor.controlTextColor.set()
+                rect.fill(using: .sourceAtop)
+
                 // Draw badge circle
                 let badgeDiameter: CGFloat = 10
                 let badgeRect = NSRect(
