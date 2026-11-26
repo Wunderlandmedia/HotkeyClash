@@ -130,7 +130,7 @@ read. The live keypress test is the honest answer for Raycast users.
 
 ## Contributing
 
-Issues and pull requests welcome. Each config file parser is a self-contained method in `ConfigFileScanner.swift`, making it straightforward to add support for new tools.
+Issues welcome: bug reports, missed conflicts, and requests for new shortcut sources. HotkeyClash is solo-maintained, so outside pull requests are not merged. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
