@@ -105,6 +105,13 @@ final class StatusBarController {
                     icon.draw(in: rect)
                 }
 
+                // Recolor the glyph to follow the menu bar appearance.
+                // The composite is marked non-template below, so the icon's
+                // dark template pixels would otherwise be invisible on a
+                // dark menu bar. sourceAtop only tints the drawn glyph.
+                NSColor.controlTextColor.set()
+                rect.fill(using: .sourceAtop)
+
                 // Draw badge circle
                 let badgeDiameter: CGFloat = 10
                 let badgeRect = NSRect(
